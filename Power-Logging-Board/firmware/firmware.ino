@@ -146,12 +146,7 @@ void loop() {
         }
 
         //! tx packet: headder + (command + length + error) + txData + crc
-        //! data: address + voldtage + cureent
-        size_t readableAddresses_length = readable_Addresses.size() * sizeof(uint8_t);
-        size_t voltageData_length = voltageData.size() * sizeof(float);
-        size_t currentData_length = currentData.size() * sizeof(float);
-        txData_length = readableAddresses_length + voltageData_length + currentData_length;
-
+        //! data: (address + voldtage + cureent) * n
         size_t txPacket_length = txPacket_min_length + txData_length;
 
         //! make txPacket
