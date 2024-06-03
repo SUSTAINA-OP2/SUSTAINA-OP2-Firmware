@@ -1,5 +1,4 @@
 //! Firmware for Power-Logging-Board in SUSTAINA-OP2
-#include "./src/SdFat/SdFat.h"
 #include "./src/INA226/INA226.h"
 #include "./src/CRC16/CRC16.h"
 #include <vector>
@@ -71,6 +70,7 @@ std::vector<float> voltageData;
 std::vector<float> currentData;
 
 size_t txData_length = 0;
+std::vector<uint8_t> txData(txData_length);
 
 CRC16 CRC;
 
@@ -100,6 +100,8 @@ void loop() {
 
     voltageData.clear();
     currentData.clear();
+
+    txData.clear();
 
     for (size_t i = 0; i < readable_Addresses.size(); i++) {
       if (INA[i].begin()) {
@@ -160,20 +162,14 @@ void loop() {
         memcpy(txPacket, headerPacket, headerPacket_length);
         packetIndex += headerPacket_length;
         txPacket[packetIndex++] = id;
-        txPacket[packetIndex++] = rxCommand; //! command
+        txPacket[packetIndex++] = rxCommand;  //! command
         txPacket[packetIndex++] = (uint8_t)txPacket_length;
         txPacket[packetIndex++] = tx_errorStatus;  //! error
 
         //! add txData to txPacket
         if (!readable_Addresses.empty()) {
-          memcpy(txPacket + packetIndex, readable_Addresses.data(), readableAddresses_length);
-          packetIndex += readableAddresses_length;
-
-          memcpy(txPacket + packetIndex, voltageData.data(), voltageData_length);
-          packetIndex += voltageData_length;
-
-          memcpy(txPacket + packetIndex, currentData.data(), currentData_length);
-          packetIndex += currentData_length;
+          memcpy(txPacket + packetIndex, txData.data(), txData_length);
+          packetIndex += txData_length;
         }
 
         //! add CRC to txPacket
@@ -184,17 +180,34 @@ void loop() {
         Serial.write(txPacket, txPacket_length);
         // serial1SendData(txPacket);
       }
-    } // if (Serial.available() ...
-  } // while
-} // loop
+    }  // if (Serial.available() ...
+  }    // while
+}  // loop
 
 void processCommand(uint8_t command, uint8_t* error) {
   switch (command) {
     case readVoltageCurrentCommand:
-      /**
+      {
+        /**
             * @brief: 
             * @return: 
             */
+
+        //! make txPacket
+        txData_length = readable_Addresses.size() * (sizeof(uint8_t) + 2 * sizeof(float));
+
+        size_t packetIndex = 0;
+
+        for (size_t i = 0; i < readable_Addresses.size(); ++i) {
+          txData[packetIndex++] = readable_Addresses[i];
+
+          memcpy(txData.data() + packetIndex, &voltageData[i], sizeof(float));
+          packetIndex += sizeof(float);
+
+          memcpy(txData.data() + packetIndex, &currentData[i], sizeof(float));
+          packetIndex += sizeof(float);
+        }
+      }
 
     default:
       *error |= commandUnsupport_errorStatus;
