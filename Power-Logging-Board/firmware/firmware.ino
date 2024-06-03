@@ -76,16 +76,16 @@ CRC16 CRC;
 
 void setup() {
   initializeSerial(serialBaudrate);
-  // initializeSerial1(serial1Baudrate);
+  initializeSerial1(serial1Baudrate);
 
   Wire.begin();
   Wire.setClock(400000L);  //! I2C Set clock change 100kHz to 400kHz
 
   I2cScanner();
+  pinMode(txdenPin, OUTPUT);
 }
 
 void loop() {
-
   //! setup INA226s
   for (size_t i = 0; i < readable_Addresses.size(); i++) {
     uint8_t address = readable_Addresses.at(i);
@@ -95,7 +95,6 @@ void loop() {
       INA.back().setMaxCurrentShunt(20, 0.002);
     }
   }
-
   while (true) {
 
     voltageData.clear();
@@ -103,6 +102,7 @@ void loop() {
 
     txData.clear();
 
+    digitalWrite(txdenPin, LOW);
     for (size_t i = 0; i < readable_Addresses.size(); i++) {
       if (INA[i].begin()) {
         //! is Connected
@@ -114,15 +114,13 @@ void loop() {
         currentData.push_back(0.0f);
       }
     }
-
-    if (Serial.available() >= rxPacket_min_length) {
+    if (Serial1.available() >= rxPacket_min_length) {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
       uint8_t tx_errorStatus = 0b00000000;
 
       if (checkHeader(headerPacket, headerPacket_length, rxPacket_forward)) {
-
         for (int i = headerPacket_length; i < rxPacket_forward_length; i++) {
-          rxPacket_forward[i] = Serial.read();
+          rxPacket_forward[i] = Serial1.read();
         }
 
         uint8_t rxBoardType = rxPacket_forward[headerPacket_length];
@@ -135,7 +133,7 @@ void loop() {
           if (i < rxPacket_forward_length) {
             rxPacket[i] = rxPacket_forward[i];
           } else {
-            rxPacket[i] = Serial.read();
+            rxPacket[i] = Serial1.read();
           }
         }
 
@@ -172,8 +170,8 @@ void loop() {
         txPacket[packetIndex++] = lowByte(txCrc);
         txPacket[packetIndex++] = highByte(txCrc);
 
-        Serial.write(txPacket, txPacket_length);
-        // serial1SendData(txPacket);
+        //Serial.write(txPacket, txPacket_length);
+        serial1SendData(txPacket, packetIndex);
       }
     }  // if (Serial.available() ...
   }    // while
@@ -190,16 +188,16 @@ void processCommand(uint8_t command, uint8_t* error) {
 
         //! make txPacket
         txData_length = readable_Addresses.size() * (sizeof(uint8_t) + 2 * sizeof(float));
-
+        txData.resize(txData_length);
         size_t packetIndex = 0;
 
         for (size_t i = 0; i < readable_Addresses.size(); ++i) {
-          txData[packetIndex++] = readable_Addresses[i];
+          txData[packetIndex++] = readable_Addresses.at(i);
 
-          memcpy(txData.data() + packetIndex, &voltageData[i], sizeof(float));
+          memcpy(txData.data() + packetIndex, &voltageData.at(i), sizeof(float));
           packetIndex += sizeof(float);
 
-          memcpy(txData.data() + packetIndex, &currentData[i], sizeof(float));
+          memcpy(txData.data() + packetIndex, &currentData.at(i), sizeof(float));
           packetIndex += sizeof(float);
         }
       }
@@ -211,7 +209,7 @@ void processCommand(uint8_t command, uint8_t* error) {
 
 bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[]) {
   for (int i = 0; i < length; i++) {
-    if (Serial.read() != header[i]) {
+    if (Serial1.read() != header[i]) {
       return false;
     }
     packet[i] = header[i];
@@ -227,15 +225,15 @@ void initializeSerial(uint32_t serialBaudrate) {
 }
 
 void initializeSerial1(uint32_t serial1Baudrate) {
-  Serial1.begin(serial1Baudrate);
+  Serial1.begin(serial1Baudrate, SERIAL_8N1, 0, 1);
   while (!Serial1) {
     ;  //! wait for serial port to connect.
   }
 }
 
-void serial1SendData(uint8_t* txPacket) {
+void serial1SendData(uint8_t* txPacket, size_t packet_num) {
   digitalWrite(txdenPin, HIGH);
-  Serial1.write(txPacket, sizeof(txPacket));
+  Serial1.write(txPacket, packet_num);
   delayMicroseconds(1000);
   digitalWrite(txdenPin, LOW);
 }
