@@ -1,6 +1,7 @@
 //! Firmware for Power-Logging-Board in SUSTAINA-OP2
 #include "./src/INA226/INA226.h"
 #include "./src/CRC16/CRC16.h"
+#include "./src/SdFat/SdFat.h"
 #include <vector>
 #include "Wire.h"
 
@@ -12,6 +13,11 @@ const uint8_t txdenPin = 2;
 const uint8_t headerPacket[] = { 0xFE, 0xFE };
 const uint32_t serialBaudrate = 9600;
 const uint32_t serial1Baudrate = 1000000;
+
+//! SD Card config
+const uint8_t SD_CS_PIN = SS;
+#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(24)) 
+unsigned long time_data = 0;
 
 //! USB-to-Quad-RS-485-Conv-Module:  0xA0 (ID: 160)
 //! Control-Switches-Board:          0xA1 (ID: 161)
@@ -78,10 +84,13 @@ std::vector<uint8_t> txData(txData_length);
 std::array<uint8_t, INA_DATA_LENGTH> send_ina_data;
 
 CRC16 CRC;
+SdFat sd;
+File logData;
 
 void setup() {
   initializeSerial(serialBaudrate);
   initializeSerial1(serial1Baudrate);
+  initializeSDcard();
 
   Wire.begin();
   Wire.setClock(400000L);  //! I2C Set clock change 100kHz to 400kHz
@@ -181,6 +190,9 @@ void loop() {
         serial1SendData(txPacket, packetIndex);
       }
     }  // if (Serial.available() ...
+
+    WriteSDcard();
+
   }    // while
 }  // loop
 
@@ -244,4 +256,64 @@ void serial1SendData(uint8_t* txPacket, size_t packet_num) {
   Serial1.write(txPacket, packet_num);
   delayMicroseconds(1000);
   digitalWrite(txdenPin, LOW);
+}
+
+void initializeSDcard(){
+  // SDカードのセットアップ
+  Serial.println(F("Initializing SD card..."));
+  if (!sd.begin(SD_CONFIG))
+  {
+    Serial.println(F("Failed to initialize SD card"));
+    return;
+  }
+
+  int fileNumber = 1; // ファイル番号の開始
+  char fileName[12]; // ファイル名を格納する配列
+  bool created = false; // ファイル作成フラグ
+
+  while (!created) {
+    sprintf(fileName, "%d.csv", fileNumber); // ファイル名を大文字で生成
+    if (!sd.exists(fileName)) {
+      // ファイルが存在しない場合、新しいファイルを作成
+      logData = sd.open(fileName, FILE_WRITE);
+      if (logData) {
+        Serial.print(fileName);
+        Serial.println(" を作成しました。");
+        created = true; // ファイルを作成したのでフラグを立てる
+      } else {
+        Serial.print(fileName);
+        Serial.println(" の作成に失敗しました。");
+      }
+    } 
+    fileNumber++; // 次の番号へ
+  }
+}
+
+void WriteSDcard()
+{
+  time_data = millis();
+  logData.print(time_data);
+  logData.print(",");
+
+  char dataStr[100] = "";
+  char buffer[7];
+
+  for (size_t i = 0; i < readable_Addresses.size(); i++) {
+
+    itoa(readable_Addresses.at(i), buffer, 16);
+    strcat(dataStr, buffer);
+    strcat(dataStr, ", ");
+    
+    dtostrf(voltageData.at(i), 5, 1, buffer);
+    strcat(dataStr, buffer);
+    strcat(dataStr, ", ");
+    
+    dtostrf(currentData.at(i), 5, 1, buffer);
+    strcat(dataStr, buffer);
+    strcat(dataStr, ", ");
+  
+  }
+
+  logData.println(dataStr);
+  logData.flush();
 }
