@@ -200,6 +200,7 @@ void processCommand(uint8_t command, uint8_t* error) {
           memcpy(txData.data() + packetIndex, &currentData.at(i), sizeof(float));
           packetIndex += sizeof(float);
         }
+        break;
       }
 
     default:
