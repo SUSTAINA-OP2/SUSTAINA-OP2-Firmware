@@ -79,7 +79,7 @@ class TimeManager{
     ~TimeManager(){};
     std::string getTime(){
       if(!is_set_time_){
-        return "Not set time yet.";
+        return "";
       }
       tm * tm_ptr = localtime(&now_time_seconds_);
       std::string buf(100,0);
@@ -87,6 +87,7 @@ class TimeManager{
       snprintf( const_cast<char*>(buf.data()) + write_size,buf.size() - write_size,".%03d",now_time_milliseconds_);
       return buf;
     }
+
     void timeUpdate(){
       if(!is_set_time_){
         return;
@@ -370,11 +371,17 @@ void initializeSDcard(){
 
 void WriteSDcard()
 {
+  static bool is_sdcard_write = false;
   time_data = millis();
+  std::string unix_time_data;
   time_manager.timeUpdate();
-  std::string unix_time_data = time_manager.getTime();
-  
-  //Serial.printf("Time: %s\n", unix_time_data.c_str());
+  if(!is_sdcard_write){
+    unix_time_data = time_manager.getTime();
+    if(!unix_time_data.empty()){
+      is_sdcard_write = true;
+    }
+  }
+
   logData.print(unix_time_data.c_str());
   logData.print(",");
   logData.print(time_data);
@@ -407,10 +414,6 @@ void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tT
   time_t secondsData = seconds.uint32_tData;
   time_t milliSecondsData = milliSeconds.uint16_tData;
   time_manager.setTime(secondsData,milliSecondsData);
-  tm * tm_ptr = localtime(&secondsData);
-  char buf[100];
-  memset(buf,0,sizeof(buf));
-  strftime(buf,sizeof(buf),"%Y/%m/%d(%A) %H:%M:%S",tm_ptr);
   //Serial.printf("Time: %s.%03d\n",buf,milliSecondsData);
 }
 
