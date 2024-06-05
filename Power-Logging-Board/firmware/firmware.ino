@@ -76,6 +76,50 @@ union uint8_tToUint16_t{
   uint16_t uint16_tData;
 };
 
+class TimeManager{
+  public:
+    TimeManager() = default;
+    ~TimeManager(){};
+    std::string getTime(){
+      if(!is_set_time_){
+        return "Not set time yet.";
+      }
+      tm * tm_ptr = localtime(&now_time_seconds_);
+      std::string buf(100,0);
+      size_t write_size = strftime(const_cast<char*>(buf.data()),buf.size(),"%Y/%m/%d(%A) %H:%M:%S",tm_ptr);
+      snprintf( const_cast<char*>(buf.data()) + write_size,buf.size() - write_size,".%03d",now_time_milliseconds_);
+      return buf;
+    }
+    void timeUpdate(){
+      if(!is_set_time_){
+        return;
+      }
+
+      const unsigned long now = millis();
+      const unsigned long elapsed_time = now - first_set_time_;
+      now_time_milliseconds_ = time_received_from_jetson_milliseconds_ + elapsed_time % 1000;
+      now_time_seconds_ = time_received_from_jetson_seconds_ + elapsed_time / 1000 + now_time_milliseconds_ / 1000;
+      now_time_milliseconds_ = now_time_milliseconds_ % 1000;
+    }
+    void setTime(const uint32_t &seconds, const uint16_t &milliseconds){
+      first_set_time_ = millis();
+      //receive_seconds_ = seconds;
+      //receive_milliseconds_ = milliseconds;
+      time_received_from_jetson_seconds_ = seconds;
+      time_received_from_jetson_milliseconds_ = milliseconds;
+      is_set_time_ = true;
+    }
+  private:
+    bool is_set_time_;
+    unsigned long first_set_time_;
+
+    time_t now_time_seconds_;
+    time_t now_time_milliseconds_;
+    time_t time_received_from_jetson_seconds_;
+    time_t time_received_from_jetson_milliseconds_;
+    
+};
+
 //! get address of connected INA226
 std::vector<uint8_t> readable_Addresses;  //! readable INA226 addresses
 void I2cScanner() {
@@ -103,6 +147,8 @@ std::array<uint8_t, INA_DATA_LENGTH> send_ina_data;
 CRC16 CRC;
 SdFat sd;
 File logData;
+
+TimeManager time_manager;
 
 uint8_tToUint32_t seconds;
 uint8_tToUint16_t milliSeconds;
@@ -331,6 +377,12 @@ void initializeSDcard(){
 void WriteSDcard()
 {
   time_data = millis();
+  time_manager.timeUpdate();
+  std::string unix_time_data = time_manager.getTime();
+  
+  //Serial.printf("Time: %s\n", unix_time_data.c_str());
+  logData.print(unix_time_data.c_str());
+  logData.print(",");
   logData.print(time_data);
   logData.print(",");
 
@@ -360,9 +412,11 @@ void WriteSDcard()
 void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tToUint16_t &milliSeconds){
   time_t secondsData = seconds.uint32_tData;
   time_t milliSecondsData = milliSeconds.uint16_tData;
+  time_manager.setTime(secondsData,milliSecondsData);
   tm * tm_ptr = localtime(&secondsData);
   char buf[100];
   memset(buf,0,sizeof(buf));
   strftime(buf,sizeof(buf),"%Y/%m/%d(%A) %H:%M:%S",tm_ptr);
   //Serial.printf("Time: %s.%03d\n",buf,milliSecondsData);
 }
+
