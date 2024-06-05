@@ -59,9 +59,6 @@ const size_t txPacket_min_length = headerPacket_length + 4 + crc_length;
 const uint8_t lowLimit_Address = 0b1000000;    //! 0x40
 const uint8_t upperLimit_Address = 0b1001111;  //! 0x4F
 
-// INA226 num
-const uint8_t MAX_INA_NUM = 7;
-const size_t INA_DATA_LENGTH = MAX_INA_NUM * (sizeof(uint8_t) + 2 * sizeof(float));
 
 //! get time for jetson
 const size_t JETSON_SECONDS_TIME_LENGTH = 4;
@@ -142,8 +139,6 @@ std::vector<float> currentData;
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
 
-std::array<uint8_t, INA_DATA_LENGTH> send_ina_data;
-
 CRC16 CRC;
 SdFat sd;
 File logData;
@@ -177,9 +172,8 @@ void loop() {
       INA.back().setMaxCurrentShunt(20, 0.002);
     }
   }
+  
   while (true) {
-
-    send_ina_data.fill(0);
 
     voltageData.clear();
     currentData.clear();
@@ -229,7 +223,7 @@ void loop() {
 
         //! tx packet: headder + (command + length + error) + txData + crc
         //! data: (address + voldtage + cureent) * n
-        size_t txPacket_length = txPacket_min_length + INA_DATA_LENGTH;
+        size_t txPacket_length = txPacket_min_length + txData_length;
 
         //! make txPacket
         uint8_t txPacket[txPacket_length] = {};
@@ -244,9 +238,9 @@ void loop() {
         txPacket[packetIndex++] = tx_errorStatus;  //! error
 
         //! add txData to txPacket
-        if(!std::all_of(send_ina_data.begin(), send_ina_data.end(), [](uint8_t i){return i == 0;})){
-          memcpy(txPacket + packetIndex, send_ina_data.data(), INA_DATA_LENGTH);
-          packetIndex += INA_DATA_LENGTH;
+        if(!readable_Addresses.empty() && !txData.empty()){
+          memcpy(txPacket + packetIndex, txData.data(), txData_length);
+          packetIndex += txData_length;
         }
 
 
@@ -276,17 +270,17 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
             */
 
         //! make txPacket
-        //txData_length = readable_Addresses.size() * (sizeof(uint8_t) + 2 * sizeof(float));
-        //txData.resize(txData_length);
+        txData_length = readable_Addresses.size() * (sizeof(uint8_t) + 2 * sizeof(float));
+        txData.resize(txData_length);
         size_t packetIndex = 0;
 
         for (size_t i = 0; i < readable_Addresses.size(); ++i) {
-          send_ina_data[packetIndex++] = readable_Addresses.at(i);
+          txData[packetIndex++] = readable_Addresses.at(i);
 
-          memcpy(send_ina_data.data() + packetIndex, &voltageData.at(i), sizeof(float));
+          memcpy(txData.data() + packetIndex, &voltageData.at(i), sizeof(float));
           packetIndex += sizeof(float);
 
-          memcpy(send_ina_data.data() + packetIndex, &currentData.at(i), sizeof(float));
+          memcpy(txData.data() + packetIndex, &currentData.at(i), sizeof(float));
           packetIndex += sizeof(float);
         }
         break;
