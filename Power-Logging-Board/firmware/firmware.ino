@@ -170,7 +170,7 @@ void loop() {
     INA.emplace_back(address);
 
     if (INA.back().begin()) {
-      INA.back().setMaxCurrentShunt(20, 0.002);
+      INA.back().setMaxCurrentShunt(38.73, 0.002);
     }
   }
   
