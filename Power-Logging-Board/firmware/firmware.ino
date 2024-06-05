@@ -5,6 +5,8 @@
 #include <vector>
 #include "Wire.h"
 
+#include <ctime>
+
 /**
    settings by users
 */
@@ -35,6 +37,8 @@ const uint8_t readVoltageCurrentCommand = 0xA0;
 const uint8_t setupBiasCommand = 0xB0;
 const uint8_t cheackFirmwareCommand = 0xD0;
 
+const uint8_t timeSetCommand = 0xC0;
+
 //! error status
 const uint8_t crc_errorStatus = 0b00000010;
 const uint8_t commandUnsupport_errorStatus = 0b00000010;
@@ -58,6 +62,19 @@ const uint8_t upperLimit_Address = 0b1001111;  //! 0x4F
 // INA226 num
 const uint8_t MAX_INA_NUM = 7;
 const size_t INA_DATA_LENGTH = MAX_INA_NUM * (sizeof(uint8_t) + 2 * sizeof(float));
+
+//! get time for jetson
+const size_t JETSON_SECONDS_TIME_LENGTH = 4;
+const size_t JETSON_MILL_TIME_LENGTH = 2;
+
+union uint8_tToUint32_t{
+  uint8_t uint8_tData[4];
+  uint32_t uint32_tData;
+};
+union uint8_tToUint16_t{
+  uint8_t uint8_tData[2];
+  uint16_t uint16_tData;
+};
 
 //! get address of connected INA226
 std::vector<uint8_t> readable_Addresses;  //! readable INA226 addresses
@@ -86,6 +103,11 @@ std::array<uint8_t, INA_DATA_LENGTH> send_ina_data;
 CRC16 CRC;
 SdFat sd;
 File logData;
+
+uint8_tToUint32_t seconds;
+uint8_tToUint16_t milliSeconds;
+
+
 
 void setup() {
   initializeSerial(serialBaudrate);
@@ -154,7 +176,7 @@ void loop() {
         }
 
         if (CRC.checkCrc16(rxPacket, rxPacket_length)) {
-          processCommand(rxCommand, &tx_errorStatus);
+          processCommand(rxCommand, &tx_errorStatus, rxPacket);
         } else {
           tx_errorStatus |= crc_errorStatus;
         }
@@ -176,8 +198,10 @@ void loop() {
         txPacket[packetIndex++] = tx_errorStatus;  //! error
 
         //! add txData to txPacket
-        memcpy(txPacket + packetIndex, send_ina_data.data(), INA_DATA_LENGTH);
-        packetIndex += INA_DATA_LENGTH;
+        if(!std::all_of(send_ina_data.begin(), send_ina_data.end(), [](uint8_t i){return i == 0;})){
+          memcpy(txPacket + packetIndex, send_ina_data.data(), INA_DATA_LENGTH);
+          packetIndex += INA_DATA_LENGTH;
+        }
 
 
         //! add CRC to txPacket
@@ -196,7 +220,7 @@ void loop() {
   }    // while
 }  // loop
 
-void processCommand(uint8_t command, uint8_t* error) {
+void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
   switch (command) {
     case readVoltageCurrentCommand:
       {
@@ -220,6 +244,21 @@ void processCommand(uint8_t command, uint8_t* error) {
           packetIndex += sizeof(float);
         }
         break;
+      }
+    case timeSetCommand:
+      {
+        /**
+            * @brief: 
+            * @return: 
+            */
+          for(int i = rxPacket_forward_length, index = 0; i < rxPacket_forward_length + JETSON_SECONDS_TIME_LENGTH ; i++, index++){
+            seconds.uint8_tData[index] = txPacket[i];
+          }
+          for(int i = rxPacket_forward_length + JETSON_SECONDS_TIME_LENGTH, index = 0; i < rxPacket_forward_length + JETSON_SECONDS_TIME_LENGTH + JETSON_MILL_TIME_LENGTH; i++, index++){
+            milliSeconds.uint8_tData[index] = txPacket[i];
+          }
+          deserializeReceiveTimeData(seconds, milliSeconds);
+          break;
       }
 
     default:
@@ -316,4 +355,14 @@ void WriteSDcard()
 
   logData.println(dataStr);
   logData.flush();
+}
+
+void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tToUint16_t &milliSeconds){
+  time_t secondsData = seconds.uint32_tData;
+  time_t milliSecondsData = milliSeconds.uint16_tData;
+  tm * tm_ptr = localtime(&secondsData);
+  char buf[100];
+  memset(buf,0,sizeof(buf));
+  strftime(buf,sizeof(buf),"%Y/%m/%d(%A) %H:%M:%S",tm_ptr);
+  //Serial.printf("Time: %s.%03d\n",buf,milliSecondsData);
 }
