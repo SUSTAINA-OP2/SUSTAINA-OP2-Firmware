@@ -64,6 +64,11 @@ const uint8_t upperLimit_Address = 0b1001111;  //! 0x4F
 const size_t JETSON_SECONDS_TIME_LENGTH = 4;
 const size_t JETSON_MILL_TIME_LENGTH = 2;
 
+const size_t INA226_MAX_NUM = 16;
+
+const size_t FLOAT_DATA_LENGTH = sizeof(float);
+
+
 union uint8_tToUint32_t{
   uint8_t uint8_tData[4];
   uint32_t uint32_tData;
@@ -71,6 +76,49 @@ union uint8_tToUint32_t{
 union uint8_tToUint16_t{
   uint8_t uint8_tData[2];
   uint16_t uint16_tData;
+};
+union uint8_tToFloat{
+  uint8_t uint8_tData[4];
+  float floatData;
+};
+
+struct INA226BiasData{
+private:
+  uint8_t address;
+  float voltage;
+  float current;
+public:
+  INA226BiasData() = default;
+  INA226BiasData(uint8_t address, float voltage, float current):address(address),voltage(voltage),current(current){};
+  ~INA226BiasData(){};
+  void setAddress(uint8_t address){
+    this->address = address;
+  }
+  void setVoltage(float voltage){
+    this->voltage = voltage;
+  }
+  void setCurrent(float current){
+    this->current = current;
+  }
+  uint8_t getAddress(){
+    return address;
+  }
+  float getVoltage(){
+    return voltage;
+  }
+  float getCurrent(){
+    return current;
+  }
+  void setBiasData(uint8_t address, float voltage, float current){
+    setAddress(address);
+    setVoltage(voltage);
+    setCurrent(current);
+  }
+  void setBiasData(INA226BiasData &bias_data){
+    setAddress(bias_data.getAddress());
+    setVoltage(bias_data.getVoltage());
+    setCurrent(bias_data.getCurrent());
+  }
 };
 
 class TimeManager{
@@ -137,6 +185,8 @@ std::vector<float> rxFloatData;
 std::vector<float> voltageData;
 std::vector<float> currentData;
 
+std::array<INA226BiasData, INA226_MAX_NUM> bias_data;
+
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
 
@@ -173,7 +223,7 @@ void loop() {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
     }
   }
-  
+
   while (true) {
 
     voltageData.clear();
@@ -300,6 +350,28 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
           }
           deserializeReceiveTimeData(seconds, milliSeconds);
           break;
+      }
+    case setupBiasCommand:
+      {
+        /**
+            * @brief: 
+            * @return: 
+            */
+        uint8_tToFloat voltage;
+        uint8_tToFloat current;
+        static const size_t BIAS_DATA_LENGTH = 1 + (FLOAT_DATA_LENGTH + FLOAT_DATA_LENGTH) ;
+        for(int ina_num = 0; ina_num < INA226_MAX_NUM; ina_num++){
+          size_t basic_index = rxPacket_forward_length + ina_num * BIAS_DATA_LENGTH;
+          uint8_t address = txPacket[basic_index];
+          for(int i = basic_index, index = 0; i < basic_index + FLOAT_DATA_LENGTH ; i++, index++){
+            voltage.uint8_tData[index] = txPacket[i];
+          }
+          for(int i = basic_index + FLOAT_DATA_LENGTH, index = 0; i < basic_index + 2 * FLOAT_DATA_LENGTH; i++, index++){
+            current.uint8_tData[index] = txPacket[i];
+          }
+          bias_data.at(ina_num).setBiasData(address, voltage.floatData, current.floatData);
+        }
+        break;
       }
 
     default:
