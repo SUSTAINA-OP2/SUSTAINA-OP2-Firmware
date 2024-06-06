@@ -633,6 +633,7 @@ void initializeSDcard()
 void WriteSDcard()
 {
   static bool is_sdcard_write = false;
+  static uint32_t cached_size = 0;
   time_data = millis();
   std::string unix_time_data;
   time_manager.timeUpdate();
@@ -646,35 +647,45 @@ void WriteSDcard()
   }
 
   logData.print(unix_time_data.c_str());
-  logData.print(",");
+  logData.print(',');
   logData.print(time_data);
-  logData.print(",");
+  logData.print(',');
   logData.print(is_send_data);
-  logData.print(",");
+  logData.print(',');
   is_send_data = false;
+  cached_size += unix_time_data.size() + 4 + 5; //上の操作の大体の大きさを足す。
 
-  char dataStr[100] = "";
-  char buffer[7];
+  static char dataStr[256];
+  memset(dataStr, 0, sizeof(dataStr));
+  // char buffer[7];
 
+  size_t wrote_size = 0;
   for (size_t i = 0; i < readable_Addresses.size(); i++)
   {
-
     const uint8_t target_address = readable_Addresses.at(i);
-    itoa(target_address, buffer, 16);
-    strcat(dataStr, buffer);
-    strcat(dataStr, ", ");
+    wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "0x%02X,%5f,%5f,", target_address, 
+                          measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
+    // itoa(target_address, buffer, 16);
+    // strcat(dataStr, buffer);
+    // strcat(dataStr, ", ");
 
-    dtostrf(measured_data.getVoltageData(target_address), 5, 1, buffer);
-    strcat(dataStr, buffer);
-    strcat(dataStr, ", ");
+    // dtostrf(measured_data.getVoltageData(target_address), 5, 1, buffer);
+    // strcat(dataStr, buffer);
+    // strcat(dataStr, ", ");
 
-    dtostrf(measured_data.getCurrentData(target_address), 5, 1, buffer);
-    strcat(dataStr, buffer);
-    strcat(dataStr, ", ");
+    // dtostrf(measured_data.getCurrentData(target_address), 5, 1, buffer);
+    // strcat(dataStr, buffer);
+    // strcat(dataStr, ", ");
   }
-
-  logData.println(dataStr);
-  logData.flush();
+  dataStr[wrote_size] = '\n';
+  ++wrote_size;
+  cached_size += wrote_size;
+  logData.write(dataStr,wrote_size);
+  if(cached_size > 2048) //2KB以上キャッシュされたらフラッシュする
+  {
+    logData.flush();
+    cached_size = 0;
+  }
 }
 
 void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tToUint16_t &milliSeconds)
