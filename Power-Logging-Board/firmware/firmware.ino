@@ -534,7 +534,7 @@ void WriteSDcard()
   logData.print(",");
   logData.print(time_data);
   logData.print(",");
-  logData.print(is_sdcard_write);
+  logData.print(is_send_data);
   logData.print(",");
   is_send_data = false;
 
