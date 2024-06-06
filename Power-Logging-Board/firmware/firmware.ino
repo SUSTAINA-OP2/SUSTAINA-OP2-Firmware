@@ -389,16 +389,18 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
             * @brief: 
             * @return: 
             */
+        ina226_detected_bias_data.clear();
         uint8_tToFloat voltage;
         uint8_tToFloat current;
-        static const size_t BIAS_DATA_LENGTH = 1 + (FLOAT_DATA_LENGTH + FLOAT_DATA_LENGTH) ;
+        static const size_t address_length = 1;
+        static const size_t BIAS_DATA_LENGTH = address_length + (FLOAT_DATA_LENGTH + FLOAT_DATA_LENGTH) ;
         for(int ina_num = 0; ina_num < INA226_MAX_NUM; ina_num++){
-          size_t basic_index = rxPacket_forward_length + ina_num * BIAS_DATA_LENGTH;
-          uint8_t address = txPacket[basic_index];
-          for(int i = basic_index, index = 0; i < basic_index + FLOAT_DATA_LENGTH ; i++, index++){
+          size_t bias_head_index = rxPacket_forward_length + ina_num * BIAS_DATA_LENGTH;
+          uint8_t address = txPacket[bias_head_index];
+          for(int i = bias_head_index + address_length, index = 0; index < FLOAT_DATA_LENGTH ; i++, index++){
             voltage.uint8_tData[index] = txPacket[i];
           }
-          for(int i = basic_index + FLOAT_DATA_LENGTH, index = 0; i < basic_index + 2 * FLOAT_DATA_LENGTH; i++, index++){
+          for(int i = bias_head_index + address_length + FLOAT_DATA_LENGTH, index = 0; index < FLOAT_DATA_LENGTH; i++, index++){
             current.uint8_tData[index] = txPacket[i];
           }
           ina226_all_bias_data.at(ina_num).setBiasData(address, voltage.floatData, current.floatData);
