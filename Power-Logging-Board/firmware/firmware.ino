@@ -75,6 +75,7 @@ const size_t INA226_MAX_NUM = 16;
 
 const size_t FLOAT_DATA_LENGTH = sizeof(float);
 
+bool is_send_data = false;
 
 union uint8_tToUint32_t{
   uint8_t uint8_tData[4];
@@ -482,6 +483,7 @@ void serial1SendData(uint8_t* txPacket, size_t packet_num) {
   Serial1.write(txPacket, packet_num);
   delayMicroseconds(1000);
   digitalWrite(txdenPin, LOW);
+  is_send_data = true;
 }
 
 void initializeSDcard(){
@@ -532,6 +534,9 @@ void WriteSDcard()
   logData.print(",");
   logData.print(time_data);
   logData.print(",");
+  logData.print(is_sdcard_write);
+  logData.print(",");
+  is_send_data = false;
 
   char dataStr[100] = "";
   char buffer[7];
