@@ -185,7 +185,8 @@ std::vector<float> rxFloatData;
 std::vector<float> voltageData;
 std::vector<float> currentData;
 
-std::array<INA226BiasData, INA226_MAX_NUM> bias_data;
+std::array<INA226BiasData, INA226_MAX_NUM> ina226_all_bias_data;
+std::vector<INA226BiasData> ina226_detected_bias_data;
 
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
@@ -235,8 +236,13 @@ void loop() {
     for (size_t i = 0; i < readable_Addresses.size(); i++) {
       if (INA[i].begin()) {
         //! is Connected
-        voltageData.push_back(INA[i].getBusVoltage());
-        currentData.push_back(INA[i].getCurrent_mA());
+        if(ina226_detected_bias_data.empty()){
+          voltageData.push_back(INA[i].getBusVoltage());
+          currentData.push_back(INA[i].getCurrent_mA());
+        }else{
+          voltageData.push_back(INA[i].getBusVoltage() * ina226_detected_bias_data.at(i).getVoltage());
+          currentData.push_back(INA[i].getCurrent_mA() * ina226_detected_bias_data.at(i).getCurrent());
+        }
       } else {
         //! is not Connected
         voltageData.push_back(0.0f);
@@ -369,7 +375,17 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
           for(int i = basic_index + FLOAT_DATA_LENGTH, index = 0; i < basic_index + 2 * FLOAT_DATA_LENGTH; i++, index++){
             current.uint8_tData[index] = txPacket[i];
           }
-          bias_data.at(ina_num).setBiasData(address, voltage.floatData, current.floatData);
+          ina226_all_bias_data.at(ina_num).setBiasData(address, voltage.floatData, current.floatData);
+        }
+
+        for(int i = 0; i < readable_Addresses.size(); i++){
+          uint8_t address = readable_Addresses.at(i);
+          for(int j = 0; j < INA226_MAX_NUM; j++){
+            if(address == ina226_all_bias_data.at(j).getAddress()){
+              ina226_detected_bias_data.emplace_back(ina226_all_bias_data.at(j));
+              break;
+            }
+          }
         }
         break;
       }
