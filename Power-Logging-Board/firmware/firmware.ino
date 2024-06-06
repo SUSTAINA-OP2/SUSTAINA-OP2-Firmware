@@ -49,6 +49,8 @@ const uint8_t crc_errorStatus = 0b00000010;
 const uint8_t commandUnsupport_errorStatus = 0b00000010;
 const uint8_t commandProcessing_errorStatus = 0b00000100;
 
+const uint8_t return_command_mask = 0b01111111;
+
 /**
    settings users do not need to change
 */
@@ -296,7 +298,7 @@ void loop() {
         packetIndex += headerPacket_length;
         
         txPacket[packetIndex++] = id;
-        txPacket[packetIndex++] = rxCommand;  //! command
+        txPacket[packetIndex++] = rxCommand & return_command_mask;  //! command
         txPacket[packetIndex++] = (uint8_t)txPacket_length;
         txPacket[packetIndex++] = tx_errorStatus;  //! error
 
