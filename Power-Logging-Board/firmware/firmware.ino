@@ -256,6 +256,7 @@ void loop() {
         currentData.push_back(0.0f);
       }
     }
+
     if (Serial1.available() >= rxPacket_min_length) {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
       uint8_t tx_errorStatus = 0b00000000;
@@ -423,6 +424,7 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
             * @brief: 
             * @return: 
             */
+        WriteSDcard(); /// write data before reset
         software_reset();
         break;
       }
@@ -541,5 +543,5 @@ void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tT
   //Serial.printf("Time: %s.%03d\n",buf,milliSecondsData);
 }
 void software_reset() {
-  //asm volatile ("  jmp 0");
+  ESP.restart();
 } 
