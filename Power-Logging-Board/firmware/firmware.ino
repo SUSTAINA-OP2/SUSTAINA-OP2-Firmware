@@ -31,13 +31,18 @@ const uint8_t firmwareVersion = 0x00;
 
 //! command
 //! commands to return the values: 0xA*
-const uint8_t readVoltageCurrentCommand = 0xA0;
+const uint8_t readVoltageCurrentCommand = 0xC0;
 
 //! commands to change/return the values: 0xB*
-const uint8_t setupBiasCommand = 0xB0;
 const uint8_t cheackFirmwareCommand = 0xD0;
 
-const uint8_t timeSetCommand = 0xC0;
+const uint8_t checkSDcardCapacityCommand = 0xC1;
+const uint8_t rescanI2CCommand = 0xC2;
+const uint8_t timeSetCommand = 0xC3;
+
+const uint8_t setupBiasCommand = 0xC4;
+const uint8_t boardResetCommand = 0xC5;
+
 
 //! error status
 const uint8_t crc_errorStatus = 0b00000010;
@@ -289,6 +294,7 @@ void loop() {
         //! add forward txPacket
         memcpy(txPacket, headerPacket, headerPacket_length);
         packetIndex += headerPacket_length;
+        
         txPacket[packetIndex++] = id;
         txPacket[packetIndex++] = rxCommand;  //! command
         txPacket[packetIndex++] = (uint8_t)txPacket_length;
@@ -318,6 +324,7 @@ void loop() {
 }  // loop
 
 void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
+  txData_length = 0;
   switch (command) {
     case readVoltageCurrentCommand:
       {
@@ -340,6 +347,23 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
           memcpy(txData.data() + packetIndex, &currentData.at(i), sizeof(float));
           packetIndex += sizeof(float);
         }
+        break;
+      }
+    case checkSDcardCapacityCommand:
+      {
+        /**
+            * @brief: 
+            * @return: 
+            */
+        break;
+      }
+    case rescanI2CCommand:
+      {
+        /**
+            * @brief: 
+            * @return: 
+            */
+        I2cScanner();
         break;
       }
     case timeSetCommand:
@@ -389,7 +413,15 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
         }
         break;
       }
-
+    case boardResetCommand:
+      {
+        /**
+            * @brief: 
+            * @return: 
+            */
+        software_reset();
+        break;
+      }
     default:
       *error |= commandUnsupport_errorStatus;
   }
@@ -504,4 +536,6 @@ void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tT
   time_manager.setTime(secondsData,milliSecondsData);
   //Serial.printf("Time: %s.%03d\n",buf,milliSecondsData);
 }
-
+void software_reset() {
+  //asm volatile ("  jmp 0");
+} 
