@@ -208,6 +208,18 @@ uint8_tToUint32_t seconds;
 uint8_tToUint16_t milliSeconds;
 
 
+//! setup INA226s
+void setupINA226s() {
+  INA.clear();
+  for (size_t i = 0; i < readable_Addresses.size(); i++) {
+    uint8_t address = readable_Addresses.at(i);
+    INA.emplace_back(address);
+
+    if (INA.back().begin()) {
+      INA.back().setMaxCurrentShunt(38.73, 0.002);
+    }
+  }
+}
 
 void setup() {
   initializeSerial(serialBaudrate);
@@ -222,15 +234,8 @@ void setup() {
 }
 
 void loop() {
-  //! setup INA226s
-  for (size_t i = 0; i < readable_Addresses.size(); i++) {
-    uint8_t address = readable_Addresses.at(i);
-    INA.emplace_back(address);
 
-    if (INA.back().begin()) {
-      INA.back().setMaxCurrentShunt(38.73, 0.002);
-    }
-  }
+  setupINA226s();
 
   while (true) {
 
@@ -367,6 +372,21 @@ void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
             * @return: 
             */
         I2cScanner();
+        setupINA226s();
+        ina226_detected_bias_data.clear();
+        size_t detected_ina_num = readable_Addresses.size();
+        txData_length = detected_ina_num ;
+        txData.resize(txData_length);
+        for(int i = 0; i < detected_ina_num; i++){
+          uint8_t address = readable_Addresses.at(i);
+          txData.at(i) = address;
+          for(int j = 0; j < INA226_MAX_NUM; j++){
+            if(address == ina226_all_bias_data.at(j).getAddress()){
+              ina226_detected_bias_data.emplace_back(ina226_all_bias_data.at(j));
+              break;
+            }
+          }
+        }
         break;
       }
     case timeSetCommand:
