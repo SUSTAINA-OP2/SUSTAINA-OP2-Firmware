@@ -10,14 +10,14 @@
 /**
    settings by users
 */
-const uint8_t txdenPin = 2;
+constexpr uint8_t txdenPin = 2;
 
-const uint8_t headerPacket[] = { 0xFE, 0xFE };
-const uint32_t serialBaudrate = 9600;
-const uint32_t serial1Baudrate = 1000000;
+constexpr uint8_t headerPacket[] = { 0xFE, 0xFE };
+constexpr uint32_t serialBaudrate = 9600;
+constexpr uint32_t serial1Baudrate = 1000000;
 
 //! SD Card config
-const uint8_t SD_CS_PIN = SS;
+constexpr uint8_t SD_CS_PIN = SS;
 #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(24)) 
 unsigned long time_data = 0;
 
@@ -25,55 +25,55 @@ unsigned long time_data = 0;
 //! Control-Switches-Board:          0xA1 (ID: 161)
 //! Power Logging Board:             0xA2 (ID: 162)
 //! Audio Board:                     0xA3 (ID: 163)
-const uint8_t id = 0xA2;
+constexpr uint8_t id = 0xA2;
 
-const uint8_t firmwareVersion = 0x00;
+constexpr uint8_t firmwareVersion = 0x00;
 
 //! command
 //! commands to return the values: 0xA*
-const uint8_t readVoltageCurrentCommand = 0xC0;
+constexpr uint8_t readVoltageCurrentCommand = 0xC0;
 
 //! commands to change/return the values: 0xB*
-const uint8_t cheackFirmwareCommand = 0xD0;
+constexpr uint8_t cheackFirmwareCommand = 0xD0;
 
-const uint8_t checkSDcardCapacityCommand = 0xC1;
-const uint8_t rescanI2CCommand = 0xC2;
-const uint8_t timeSetCommand = 0xC3;
+constexpr uint8_t checkSDcardCapacityCommand = 0xC1;
+constexpr uint8_t rescanI2CCommand = 0xC2;
+constexpr uint8_t timeSetCommand = 0xC3;
 
-const uint8_t setupBiasCommand = 0xC4;
-const uint8_t boardResetCommand = 0xC5;
+constexpr uint8_t setupBiasCommand = 0xC4;
+constexpr uint8_t boardResetCommand = 0xC5;
 
 
 //! error status
-const uint8_t crc_errorStatus = 0b00000010;
-const uint8_t commandUnsupport_errorStatus = 0b00000010;
-const uint8_t commandProcessing_errorStatus = 0b00000100;
+constexpr uint8_t crc_errorStatus = 0b00000010;
+constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
+constexpr uint8_t commandProcessing_errorStatus = 0b00000100;
 
-const uint8_t return_command_mask = 0b01111111;
+constexpr uint8_t return_command_mask = 0b01111111;
 
 /**
    settings users do not need to change
 */
-const size_t headerPacket_length = sizeof(headerPacket);
-const size_t crc_length = sizeof(uint16_t);
+constexpr size_t headerPacket_length = sizeof(headerPacket);
+constexpr size_t crc_length = sizeof(uint16_t);
 
 //! rx packet: headder + (id + command + length) + data * n + crc
-const size_t rxPacket_forward_length = headerPacket_length + 3;
-const size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
+constexpr size_t rxPacket_forward_length = headerPacket_length + 3;
+constexpr size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
 
 //! tx packet: headder + (id + command + length + error) + txData + crc
-const size_t txPacket_min_length = headerPacket_length + 4 + crc_length;
-const uint8_t lowLimit_Address = 0b1000000;    //! 0x40
-const uint8_t upperLimit_Address = 0b1001111;  //! 0x4F
+constexpr size_t txPacket_min_length = headerPacket_length + 4 + crc_length;
+constexpr uint8_t lowLimit_Address = 0b1000000;    //! 0x40
+constexpr uint8_t upperLimit_Address = 0b1001111;  //! 0x4F
 
 
 //! get time for jetson
-const size_t JETSON_SECONDS_TIME_LENGTH = 4;
-const size_t JETSON_MILL_TIME_LENGTH = 2;
+constexpr size_t JETSON_SECONDS_TIME_LENGTH = 4;
+constexpr size_t JETSON_MILL_TIME_LENGTH = 2;
 
-const size_t INA226_MAX_NUM = 16;
+constexpr size_t INA226_MAX_NUM = 16;
 
-const size_t FLOAT_DATA_LENGTH = sizeof(float);
+constexpr size_t FLOAT_DATA_LENGTH = sizeof(float);
 
 bool is_send_data = false;
 
@@ -99,13 +99,13 @@ public:
   INA226BiasData() = default;
   INA226BiasData(uint8_t address, float voltage, float current):address(address),voltage(voltage),current(current){};
   ~INA226BiasData(){};
-  void setAddress(uint8_t address){
+  void setAddress(const uint8_t& address){
     this->address = address;
   }
-  void setVoltage(float voltage){
+  void setVoltage(const float& voltage){
     this->voltage = voltage;
   }
-  void setCurrent(float current){
+  void setCurrent(const float& current){
     this->current = current;
   }
   uint8_t getAddress(){
@@ -117,7 +117,7 @@ public:
   float getCurrent(){
     return current;
   }
-  void setBiasData(uint8_t address, float voltage, float current){
+  void setBiasData(const uint8_t& address, const float& voltage, const float& current){
     setAddress(address);
     setVoltage(voltage);
     setCurrent(current);
@@ -187,6 +187,7 @@ void I2cScanner() {
     }
   }
 }
+
 
 std::vector<INA226> INA;
 std::vector<float> rxFloatData;
@@ -332,7 +333,7 @@ void loop() {
   }    // while
 }  // loop
 
-void processCommand(uint8_t command, uint8_t* error, const uint8_t txPacket[]) {
+void processCommand(const uint8_t& command, uint8_t* error, const uint8_t txPacket[]) {
   txData_length = 0;
   switch (command) {
     case readVoltageCurrentCommand:
@@ -464,21 +465,21 @@ bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[]) 
   return true;
 }
 
-void initializeSerial(uint32_t serialBaudrate) {
+void initializeSerial(const uint32_t& serialBaudrate) {
   Serial.begin(serialBaudrate);
   while (!Serial) {
     ;  //! wait for serial port to connect. Needed for native USB
   }
 }
 
-void initializeSerial1(uint32_t serial1Baudrate) {
+void initializeSerial1(const uint32_t& serial1Baudrate) {
   Serial1.begin(serial1Baudrate, SERIAL_8N1, 0, 1);
   while (!Serial1) {
     ;  //! wait for serial port to connect.
   }
 }
 
-void serial1SendData(uint8_t* txPacket, size_t packet_num) {
+void serial1SendData(uint8_t* txPacket, const size_t& packet_num) {
   digitalWrite(txdenPin, HIGH);
   Serial1.write(txPacket, packet_num);
   delayMicroseconds(1000);
