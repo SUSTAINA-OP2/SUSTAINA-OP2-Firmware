@@ -3,6 +3,7 @@
 #include "./src/CRC16/CRC16.h"
 #include "./src/SdFat/SdFat.h"
 #include <vector>
+#include <unordered_map>
 #include "Wire.h"
 
 #include <ctime>
@@ -208,13 +209,73 @@ void I2cScanner()
   }
 }
 
+struct alignas(4) Ina226SensorData
+{
+  uint8_t padding[3];     //いい感じにパディングする
+  uint8_t address_;
+  float voltage_;
+  float current_;
+  static constexpr size_t byte_size = sizeof(address_) + sizeof(voltage_) + sizeof(current_);
+};
+
+struct Ina226MeasurementData
+{
+  Ina226MeasurementData() : measurement_data_()
+  {
+    clearData();
+  }
+
+  std::array<Ina226SensorData,INA226_MAX_NUM> measurement_data_;
+  void clearData()
+  {
+    measurement_data_.fill({0,0,0});
+  }
+
+  void setData(const uint8_t &address, const float &voltage, const float &current)
+  {
+    if(address > upperLimit_Address)
+    {
+      return;
+    }
+    const size_t index = address - lowLimit_Address;
+    measurement_data_[index].address_ = address;
+    measurement_data_[index].voltage_ = voltage;
+    measurement_data_[index].current_ = current;
+  }
+
+  void writeDataToBuff(uint8_t *txData)
+  {
+    size_t packetIndex = 0;
+    for (const auto& data: measurement_data_)
+    {
+      if(data.address_ == 0)
+      {
+        // packetIndex += Ina226SensorData::byte_size;
+        continue;
+      }
+      memcpy(txData + packetIndex, &data.address_, Ina226SensorData::byte_size);
+      packetIndex += Ina226SensorData::byte_size;
+    }
+  }
+
+  float getCurrentData(const uint8_t& target_address)
+  {
+    return measurement_data_[target_address - lowLimit_Address].current_;
+  }
+
+  float getVoltageData(const uint8_t& target_address)
+  {
+    return measurement_data_[target_address - lowLimit_Address].voltage_;
+  }
+};
+
 std::vector<INA226> INA;
 std::vector<float> rxFloatData;
-std::vector<float> voltageData;
-std::vector<float> currentData;
 
 std::array<INA226BiasData, INA226_MAX_NUM> ina226_all_bias_data;
-std::vector<INA226BiasData> ina226_detected_bias_data;
+std::unordered_map<uint8_t,INA226BiasData> ina226_detected_bias_data; //アドレスをハッシュとした連想配列
+
+Ina226MeasurementData measured_data;
 
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
@@ -265,33 +326,25 @@ void loop()
   while (true)
   {
 
-    voltageData.clear();
-    currentData.clear();
+    measured_data.clearData();
 
     txData.clear();
 
     digitalWrite(txdenPin, LOW);
-    for (size_t i = 0; i < readable_Addresses.size(); i++)
+    for (auto& ina_sensor : INA)
     {
-      if (INA[i].begin())
+      if (ina_sensor.begin())
       {
         //! is Connected
-        if (ina226_detected_bias_data.empty())
+        const uint8_t target_address = ina_sensor.getAddress();
+        if(ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) //バイアスが設定されていない時
         {
-          voltageData.push_back(INA[i].getBusVoltage());
-          currentData.push_back(INA[i].getCurrent_mA());
+          measured_data.setData(target_address, ina_sensor.getBusVoltage(), ina_sensor.getCurrent_mA());
         }
         else
         {
-          voltageData.push_back(INA[i].getBusVoltage() * ina226_detected_bias_data.at(i).getVoltage());
-          currentData.push_back(INA[i].getCurrent_mA() * ina226_detected_bias_data.at(i).getCurrent());
+          measured_data.setData(target_address, ina_sensor.getBusVoltage() * ina226_detected_bias_data[target_address].getVoltage(), ina_sensor.getCurrent_mA() * ina226_detected_bias_data[target_address].getCurrent());
         }
-      }
-      else
-      {
-        //! is not Connected
-        voltageData.push_back(0.0f);
-        currentData.push_back(0.0f);
       }
     }
 
@@ -390,16 +443,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
     txData.resize(txData_length);
     size_t packetIndex = 0;
 
-    for (size_t i = 0; i < readable_Addresses.size(); ++i)
-    {
-      txData[packetIndex++] = readable_Addresses.at(i);
-
-      memcpy(txData.data() + packetIndex, &voltageData.at(i), sizeof(float));
-      packetIndex += sizeof(float);
-
-      memcpy(txData.data() + packetIndex, &currentData.at(i), sizeof(float));
-      packetIndex += sizeof(float);
-    }
+    measured_data.writeDataToBuff(txData.data());
     break;
   }
   case checkSDcardCapacityCommand:
@@ -430,7 +474,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       {
         if (address == ina226_all_bias_data.at(j).getAddress())
         {
-          ina226_detected_bias_data.emplace_back(ina226_all_bias_data.at(j));
+          ina226_detected_bias_data[address] = ina226_all_bias_data.at(j);
           break;
         }
       }
@@ -487,7 +531,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       {
         if (address == ina226_all_bias_data.at(j).getAddress())
         {
-          ina226_detected_bias_data.emplace_back(ina226_all_bias_data.at(j));
+          ina226_detected_bias_data[address] = ina226_all_bias_data.at(j);
           break;
         }
       }
@@ -615,15 +659,16 @@ void WriteSDcard()
   for (size_t i = 0; i < readable_Addresses.size(); i++)
   {
 
-    itoa(readable_Addresses.at(i), buffer, 16);
+    const uint8_t target_address = readable_Addresses.at(i);
+    itoa(target_address, buffer, 16);
     strcat(dataStr, buffer);
     strcat(dataStr, ", ");
 
-    dtostrf(voltageData.at(i), 5, 1, buffer);
+    dtostrf(measured_data.getVoltageData(target_address), 5, 1, buffer);
     strcat(dataStr, buffer);
     strcat(dataStr, ", ");
 
-    dtostrf(currentData.at(i), 5, 1, buffer);
+    dtostrf(measured_data.getCurrentData(target_address), 5, 1, buffer);
     strcat(dataStr, buffer);
     strcat(dataStr, ", ");
   }
