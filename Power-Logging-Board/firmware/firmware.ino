@@ -335,6 +335,8 @@ SdFat sd;
 File logData;
 
 TimeManager time_manager;
+FreqCalculator freq_calc;
+Stopwatch stopwatch;
 
 uint8_tToUint32_t seconds;
 uint8_tToUint16_t milliSeconds;
