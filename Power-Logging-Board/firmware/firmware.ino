@@ -381,7 +381,7 @@ void loop()
     measured_data.clearData();
 
     txData.clear();
-
+    // stopwatch.start();
     digitalWrite(txdenPin, LOW);
     for (auto& ina_sensor : INA)
     {
@@ -396,10 +396,11 @@ void loop()
         else
         {
           measured_data.setData(target_address, ina_sensor.getBusVoltage() * ina226_detected_bias_data[target_address].getVoltage(), ina_sensor.getCurrent_mA() * ina226_detected_bias_data[target_address].getCurrent());
+          // Serial.printf("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
       }
     }
-
+    // stopwatch.printElapsedTime();
     if (Serial1.available() >= rxPacket_min_length)
     {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
@@ -524,9 +525,9 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       txData.at(i) = address;
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
-        if (address == ina226_all_bias_data.at(j).getAddress())
+        if (address == ina226_all_bias_data[j].getAddress())
         {
-          ina226_detected_bias_data[address] = ina226_all_bias_data.at(j);
+          ina226_detected_bias_data[address] = ina226_all_bias_data[j];
           break;
         }
       }
@@ -573,7 +574,8 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       {
         current.uint8_tData[index] = txPacket[i];
       }
-      ina226_all_bias_data.at(ina_num).setBiasData(address, voltage.floatData, current.floatData);
+      ina226_all_bias_data[ina_num].setBiasData(address, voltage.floatData, current.floatData);
+      // Serial.printf("Address: %x, Voltage: %f, Current: %f\n", address, ina226_all_bias_data[ina_num].getVoltage(), ina226_all_bias_data[ina_num].getCurrent());
     }
 
     for (int i = 0; i < readable_Addresses.size(); i++)
@@ -581,9 +583,10 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       uint8_t address = readable_Addresses.at(i);
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
-        if (address == ina226_all_bias_data.at(j).getAddress())
+        if (address == ina226_all_bias_data[j].getAddress())
         {
-          ina226_detected_bias_data[address] = ina226_all_bias_data.at(j);
+          ina226_detected_bias_data[address].setBiasData(address,ina226_all_bias_data[j].getVoltage(),ina226_all_bias_data[j].getCurrent());
+          // Serial.printf("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(),ina226_detected_bias_data[address].getVoltage(),ina226_detected_bias_data[address].getCurrent());
           break;
         }
       }
@@ -690,6 +693,7 @@ void WriteSDcard()
   time_data = millis();
   std::string unix_time_data;
   time_manager.timeUpdate();
+  // freq_calc.count();
   if (!is_sdcard_write)
   {
     unix_time_data = time_manager.getTime();
@@ -743,6 +747,7 @@ void WriteSDcard()
   if(cached_size > 4096) //4KB以上キャッシュされたらフラッシュする
   {
     logData.flush();
+    // Serial.printf("Freq :: %f\n",freq_calc.getFreq(time_data));
     cached_size = 0;
   }
 }
