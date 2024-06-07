@@ -545,6 +545,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
      * @return:
      */
     WriteSDcard(); /// write data before reset
+    logData.flush();
     software_reset();
     break;
   }
