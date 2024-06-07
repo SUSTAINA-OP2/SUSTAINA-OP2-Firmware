@@ -524,9 +524,9 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       txData.at(i) = address;
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
-        if (address == ina226_all_bias_data.at(j).getAddress())
+        if (address == ina226_all_bias_data[j].getAddress())
         {
-          ina226_detected_bias_data[address] = ina226_all_bias_data.at(j);
+          ina226_detected_bias_data[address] = ina226_all_bias_data[j];
           break;
         }
       }
