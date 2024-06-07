@@ -223,6 +223,25 @@ struct FreqCalculator
   }
 };
 
+struct Stopwatch
+{
+  uint32_t start_time;
+  Stopwatch() : start_time(0){};
+  void start()
+  {
+    start_time = micros();
+  }
+  uint32_t getElapsedTime()
+  {
+    return micros() - start_time;
+  }
+
+  void printElapsedTime()
+  {
+    Serial.printf("Elapsed Time: %d\n", getElapsedTime());
+  }
+};
+
 //! get address of connected INA226
 std::vector<uint8_t> readable_Addresses; //! readable INA226 addresses
 void I2cScanner()
