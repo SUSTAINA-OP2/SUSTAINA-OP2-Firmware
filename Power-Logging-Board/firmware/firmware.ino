@@ -381,7 +381,7 @@ void loop()
     measured_data.clearData();
 
     txData.clear();
-
+    // stopwatch.start();
     digitalWrite(txdenPin, LOW);
     for (auto& ina_sensor : INA)
     {
@@ -396,10 +396,11 @@ void loop()
         else
         {
           measured_data.setData(target_address, ina_sensor.getBusVoltage() * ina226_detected_bias_data[target_address].getVoltage(), ina_sensor.getCurrent_mA() * ina226_detected_bias_data[target_address].getCurrent());
+          // Serial.printf("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
       }
     }
-
+    // stopwatch.printElapsedTime();
     if (Serial1.available() >= rxPacket_min_length)
     {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
@@ -692,6 +693,7 @@ void WriteSDcard()
   time_data = millis();
   std::string unix_time_data;
   time_manager.timeUpdate();
+  // freq_calc.count();
   if (!is_sdcard_write)
   {
     unix_time_data = time_manager.getTime();
@@ -745,6 +747,7 @@ void WriteSDcard()
   if(cached_size > 4096) //4KB以上キャッシュされたらフラッシュする
   {
     logData.flush();
+    // Serial.printf("Freq :: %f\n",freq_calc.getFreq(time_data));
     cached_size = 0;
   }
 }
