@@ -641,7 +641,7 @@ void serial1SendData(uint8_t *txPacket, const size_t &packet_num)
 {
   digitalWrite(txdenPin, HIGH);
   Serial1.write(txPacket, packet_num);
-  delayMicroseconds(1000);
+  Serial1.flush();
   digitalWrite(txdenPin, LOW);
   is_send_data = true;
 }
