@@ -732,7 +732,7 @@ void WriteSDcard()
   ++wrote_size;
   cached_size += wrote_size;
   logData.write(dataStr,wrote_size);
-  if(cached_size > 2048) //2KB以上キャッシュされたらフラッシュする
+  if(cached_size > 4096) //4KB以上キャッシュされたらフラッシュする
   {
     logData.flush();
     cached_size = 0;
