@@ -698,21 +698,27 @@ void WriteSDcard()
       is_sdcard_write = true;
     }
   }
+  if(unix_time_data.length() != 0)
+  {
+    logData.print(unix_time_data.c_str());
+  }
 
-  logData.print(unix_time_data.c_str());
-  logData.print(',');
-  logData.print(time_data);
-  logData.print(',');
-  logData.print(is_send_data);
-  logData.print(',');
+  static char headerStr[32];
+  memset(headerStr, 0, sizeof(headerStr));
+  int32_t header_write_size = snprintf(headerStr, sizeof(headerStr), ",%d,%d,",time_data,is_send_data);
+  if(header_write_size > 0)
+  {
+    cached_size += header_write_size;
+    logData.write(headerStr, header_write_size);
+  }
+
   is_send_data = false;
-  cached_size += unix_time_data.size() + 4 + 5; //上の操作の大体の大きさを足す。
-
+  
   static char dataStr[256];
   memset(dataStr, 0, sizeof(dataStr));
   // char buffer[7];
 
-  size_t wrote_size = 0;
+  int32_t wrote_size = 0;
   for (size_t i = 0; i < readable_Addresses.size(); i++)
   {
     const uint8_t target_address = readable_Addresses.at(i);
