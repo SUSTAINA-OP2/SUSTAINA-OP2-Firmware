@@ -192,6 +192,37 @@ private:
   time_t time_received_from_jetson_milliseconds_;
 };
 
+struct FreqCalculator
+{
+  uint32_t start_time;
+  uint32_t write_count;
+  float    freq;
+  FreqCalculator() : start_time(0), write_count(0), freq(0.0f){};
+  void count()
+  {
+    if (start_time == 0)
+    {
+      start_time = millis();
+    }
+    write_count++;
+  }
+
+  float getFreq(const uint32_t& now_time)
+  {
+    if (start_time == 0)
+    {
+      return 0.0f;
+    }
+    if (now_time - start_time > 1000)
+    {
+      freq = (float)write_count / (float)(now_time - start_time) * 1000.0f;
+      start_time = now_time;
+      write_count = 0;
+    }
+    return freq;
+  }
+};
+
 //! get address of connected INA226
 std::vector<uint8_t> readable_Addresses; //! readable INA226 addresses
 void I2cScanner()
