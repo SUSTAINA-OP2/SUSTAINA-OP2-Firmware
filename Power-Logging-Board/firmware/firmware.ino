@@ -663,7 +663,7 @@ void WriteSDcard()
   for (size_t i = 0; i < readable_Addresses.size(); i++)
   {
     const uint8_t target_address = readable_Addresses.at(i);
-    wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "0x%02X,%5f,%5f,", target_address, 
+    wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "0x%02X,%5.0f,%5.0f,", target_address, 
                           measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
     // itoa(target_address, buffer, 16);
     // strcat(dataStr, buffer);
