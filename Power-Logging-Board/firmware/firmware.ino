@@ -238,7 +238,7 @@ struct Stopwatch
 
   void printElapsedTime()
   {
-    Serial.printf("Elapsed Time: %d\n", getElapsedTime());
+    Serial.printf("Elapsed Time: %d[us]\n", getElapsedTime());
   }
 };
 
