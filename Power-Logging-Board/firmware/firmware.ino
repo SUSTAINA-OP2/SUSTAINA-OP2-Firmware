@@ -8,6 +8,8 @@
 
 #include <ctime>
 
+#define DEBUG 0
+
 /**
    settings by users
 */
@@ -359,12 +361,14 @@ void setupINA226s()
 
 void setup()
 {
+#if DEBUG
   initializeSerial(serialBaudrate);
+#endif
   initializeSerial1(serial1Baudrate);
   initializeSDcard();
 
   Wire.begin();
-  Wire.setClock(2000000L); //! I2C Set clock change 100kHz to 400kHz
+  Wire.setClock(400000L); //! I2C Set clock change 100kHz to 400kHz
 
   I2cScanner();
   pinMode(txdenPin, OUTPUT);
