@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 		0x6011,					   // PID
 		"FTDI",					   // Manufacturer
 		"FT",					   // Manufacturer ID
-		"USB-Quad Serial Conv for Left_Head", // Description
+		"USB-Quad Serial Conv for Left", // Description
 		"FT000001",				   // Serial Number     シリアルナンバーは適当で良いらしいので、全て同じこの値にした。
 		150,					   // MaxPower
 		1,						   // PnP      FT232Bのextensionのみに関連する設定と思われる
