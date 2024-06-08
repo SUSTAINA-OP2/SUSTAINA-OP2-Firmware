@@ -395,7 +395,7 @@ void loop()
         }
         else
         {
-          measured_data.setData(target_address, ina_sensor.getBusVoltage() * ina226_detected_bias_data[target_address].getVoltage(), ina_sensor.getCurrent_mA() * ina226_detected_bias_data[target_address].getCurrent());
+          measured_data.setData(target_address, ina_sensor.getBusVoltage() + ina226_detected_bias_data[target_address].getVoltage(), ina_sensor.getCurrent_mA() + ina226_detected_bias_data[target_address].getCurrent());
           // Serial.printf("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
       }
