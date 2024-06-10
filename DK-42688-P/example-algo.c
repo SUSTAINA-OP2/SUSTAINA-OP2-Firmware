@@ -146,8 +146,8 @@ static void store_biases(void);
  * ----------------------------------------------------------------------*/
 
 typedef struct {
-    float gyro[3];
     float acc[3];
+    float gyro[3];
     float quat[4];
     float temperature;
 } HR_IMUdata;
@@ -189,7 +189,7 @@ void convert_and_setData(void)
 	fixedpoint_to_float(&output.temp_degC_q16, &temp, 16, 1);
 	fixedpoint_to_float(output.grv_quat_q30, grv_quat, 30, 4);
 
-	setData(acc_g,gyr_dps,grv_quat,temp);
+	setData(gyr_dps,acc_g,grv_quat,temp);
 }
 
 unsigned int writeDataToBuffAndSend()
