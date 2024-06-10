@@ -1,6 +1,8 @@
-
 #include <ADS126X.h>
 #include <array>
+#include <vector>
+
+#include "./src/CRC16/CRC16.h"
 
 
 #define NUM_AVG 50
@@ -9,7 +11,40 @@ uint8_t rx = 0;
 uint8_t tx = 1;
 uint8_t TXDEN = 2;
 
-std::array<uint8_t, 5> check_recv_data{250, 240, 245, 230, 252};
+constexpr std::array<uint8_t, 5> check_recv_data{250, 240, 245, 230, 252};
+
+//* check packet
+constexpr uint8_t HEADER_PACKET[] = {0xfe, 0xfe};
+constexpr size_t HEADER_PACKET_LENGTH = sizeof(HEADER_PACKET);
+// コマンド
+constexpr uint8_t READ_SENSOR_DATA_COMMAND = 0x81;
+constexpr uint8_t PACKET_OPTION = 0x00;
+
+constexpr uint8_t RETURN_PACKET_ID = 0x7D;
+constexpr uint8_t CRC_LENGTH = sizeof(uint16_t);
+
+constexpr size_t rxPacket_forward_length = HEADER_PACKET_LENGTH + 4;
+constexpr size_t RECV_MIN_PACKET_SIZE = HEADER_PACKET_LENGTH + CRC_LENGTH ;
+
+constexpr size_t txPacket_min_length = HEADER_PACKET_LENGTH + 4 + CRC_LENGTH;
+
+constexpr size_t decode_sensor_data_length = 16;
+
+constexpr uint8_t crc_errorStatus = 0b00000010;
+constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
+constexpr uint8_t commandProcessing_errorStatus = 0b00000100;
+
+size_t txData_length = 0;
+std::vector<uint8_t> txData;
+
+CRC16 CRC;
+
+void serial1SendData(uint8_t *txPacket, const size_t &packet_num);
+bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[]);
+void processCommand(const uint8_t command, uint8_t *tx_errorStatus, uint8_t rxPacket[]);
+
+
+
 bool readSerial();
 void decodeSendData(const std::array<int32_t, 4> &data) ;
 
@@ -128,11 +163,79 @@ void loop() {
       count = (count + 1) % NUM_AVG;
     }
   }
+    if (Serial1.available() >= RECV_MIN_PACKET_SIZE)
+    {
+      uint8_t rxPacket_forward[RECV_MIN_PACKET_SIZE] = {};
+      uint8_t tx_errorStatus = 0b00000000;
 
-  bool fg = readSerial();
-  if(fg) {
-    //Serial.println("send");
-    decodeSendData(force);
+      if (checkHeader(HEADER_PACKET, HEADER_PACKET_LENGTH, rxPacket_forward))
+      {
+        for (int i = HEADER_PACKET_LENGTH; i < rxPacket_forward_length; i++)
+        {
+          rxPacket_forward[i] = Serial1.read();
+        }
+
+        uint8_t rxBoardType = rxPacket_forward[HEADER_PACKET_LENGTH];
+        uint8_t rxCommand = rxPacket_forward[HEADER_PACKET_LENGTH + 1];
+        size_t rxPacket_length = rxPacket_forward[HEADER_PACKET_LENGTH + 2];
+
+        //! make rxPaket
+        uint8_t rxPacket[rxPacket_length] = {};
+        for (int i = 0; i < rxPacket_length; i++)
+        {
+          if (i < rxPacket_forward_length)
+          {
+            rxPacket[i] = rxPacket_forward[i];
+          }
+          else
+          {
+            rxPacket[i] = Serial1.read();
+          }
+        }
+
+        if (CRC.checkCrc16(rxPacket, rxPacket_length))
+        {
+          processCommand(rxCommand, &tx_errorStatus, rxPacket);
+        }
+        else
+        {
+          tx_errorStatus |= crc_errorStatus;
+        }
+
+        //! tx packet: headder + (command + length + error) + txData + crc
+        //! data: (address + voldtage + cureent) * n
+        size_t txPacket_length = txPacket_min_length + txData_length;
+
+        //! make txPacket
+        uint8_t txPacket[txPacket_length] = {};
+        size_t packetIndex = 0;
+
+        //! add forward txPacket
+        memcpy(txPacket, HEADER_PACKET, HEADER_PACKET_LENGTH);
+        packetIndex += HEADER_PACKET_LENGTH;
+
+        txPacket[packetIndex++] = RETURN_PACKET_ID; //! board type
+        txPacket[packetIndex++] = (uint8_t)txPacket_length;
+        txPacket[packetIndex++] = rxCommand; //! command
+        txPacket[packetIndex++] = PACKET_OPTION; // option
+        txPacket[packetIndex++] = tx_errorStatus; //! error
+
+        //! add txData to txPacket
+        if (!txData.empty())
+        {
+          memcpy(txPacket + packetIndex, txData.data(), txData_length);
+          packetIndex += txData_length;
+        }
+
+        //! add CRC to txPacket
+        uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - CRC_LENGTH);
+        txPacket[packetIndex++] = lowByte(txCrc);
+        txPacket[packetIndex++] = highByte(txCrc);
+
+        // Serial.write(txPacket, txPacket_length);
+        serial1SendData(txPacket, packetIndex);
+      }
+    } // if (Serial.available() ...
   }
   //double =  (( end - start ) / 1000000.);
   //average_fps += tmp_fps ;
@@ -155,7 +258,6 @@ void loop() {
   }
   */
   //delay(100);  // wait 1 second
-}
 void decodeSendData(const std::array<int32_t, 4> &data) 
 {
   size_t tx_data_num = 19;
@@ -219,4 +321,52 @@ bool readSerial(){
     }
   }
   return fg;
+}
+
+bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[])
+{
+  for (int i = 0; i < length; i++)
+  {
+    if (Serial1.read() != header[i])
+    {
+      return false;
+    }
+    packet[i] = header[i];
+  }
+  return true;
+}
+void processCommand(const uint8_t command, uint8_t *tx_errorStatus, uint8_t rxPacket[])
+{
+  txData_length = 0;
+  txData.clear();
+  switch (command)
+  {
+  case READ_SENSOR_DATA_COMMAND:
+  {
+    //Serial.println("READ_SENSOR_DATA_COMMAND");
+    //Serial.println("send");
+    size_t sensor_count = 0;
+    txData.resize(decode_sensor_data_length);
+    txData_length = decode_sensor_data_length;
+    for (const auto &sensor_in : force) {
+      //Serial.print("sensor "); Serial.print(count); Serial.print(" "); Serial.println(sensor_in);
+      txData[sensor_count++] = (byte)((sensor_in & 0x000000FF) >> 0);
+      txData[sensor_count++] = (byte)((sensor_in & 0x0000FF00) >> 8);
+      txData[sensor_count++] = (byte)((sensor_in & 0x00FF0000) >> 16);
+      txData[sensor_count++] = (byte)((sensor_in & 0xFF000000) >> 24);
+    }
+    break;
+  }
+  default:
+    *tx_errorStatus |= commandUnsupport_errorStatus;
+    break;
+  }
+}
+
+void serial1SendData(uint8_t *txPacket, const size_t &packet_num)
+{
+  digitalWrite(TXDEN, HIGH);
+  Serial1.write(txPacket, packet_num);
+  Serial1.flush();
+  digitalWrite(TXDEN, LOW);
 }
