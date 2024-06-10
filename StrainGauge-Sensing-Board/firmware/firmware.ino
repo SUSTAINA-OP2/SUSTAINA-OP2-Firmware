@@ -11,7 +11,8 @@ uint8_t rx = 0;
 uint8_t tx = 1;
 uint8_t TXDEN = 2;
 
-constexpr std::array<uint8_t, 5> check_recv_data{250, 240, 245, 230, 252};
+//constexpr std::array<uint8_t, 5> check_recv_data{250, 240, 245, 230, 252};
+constexpr std::array<uint8_t, 8> check_recv_data{0xfe, 0xfe, 0x7D, 0x08, 0x81, 0x00, 0xf2, 0x6c};
 
 //* check packet
 constexpr uint8_t HEADER_PACKET[] = {0xfe, 0xfe};
@@ -24,7 +25,7 @@ constexpr uint8_t RETURN_PACKET_ID = 0x7D;
 constexpr uint8_t CRC_LENGTH = sizeof(uint16_t);
 
 constexpr size_t rxPacket_forward_length = HEADER_PACKET_LENGTH + 4;
-constexpr size_t RECV_MIN_PACKET_SIZE = HEADER_PACKET_LENGTH + CRC_LENGTH ;
+constexpr size_t RECV_MIN_PACKET_SIZE = HEADER_PACKET_LENGTH + 4 + CRC_LENGTH ;
 
 constexpr size_t txPacket_min_length = HEADER_PACKET_LENGTH + 4 + CRC_LENGTH;
 
@@ -163,6 +164,50 @@ void loop() {
       count = (count + 1) % NUM_AVG;
     }
   }
+    bool fg = readSerial();
+    if(fg) {
+      size_t sensor_count = 0;
+      txData.resize(decode_sensor_data_length);
+      txData_length = decode_sensor_data_length;
+      for (const auto &sensor_in : force) {
+        //Serial.print("sensor "); Serial.print(count); Serial.print(" "); Serial.println(sensor_in);
+        txData[sensor_count++] = (byte)((sensor_in & 0x000000FF) >> 0);
+        txData[sensor_count++] = (byte)((sensor_in & 0x0000FF00) >> 8);
+        txData[sensor_count++] = (byte)((sensor_in & 0x00FF0000) >> 16);
+        txData[sensor_count++] = (byte)((sensor_in & 0xFF000000) >> 24);
+      }
+        //! tx packet: headder + (command + length + error) + txData + crc
+        //! data: (address + voldtage + cureent) * n
+        size_t txPacket_length = 24;
+
+        //! make txPacket
+        uint8_t txPacket[txPacket_length] = {};
+        size_t packetIndex = 0;
+
+        //! add forward txPacket
+        memcpy(txPacket, HEADER_PACKET, HEADER_PACKET_LENGTH);
+        packetIndex += HEADER_PACKET_LENGTH;
+
+        txPacket[packetIndex++] = RETURN_PACKET_ID; //! board type
+        txPacket[packetIndex++] = (uint8_t)txPacket_length;
+        txPacket[packetIndex++] = READ_SENSOR_DATA_COMMAND; //! command
+        txPacket[packetIndex++] = PACKET_OPTION; // option
+        //txPacket[packetIndex++] = tx_errorStatus; //! error
+
+        //! add txData to txPacket
+        memcpy(txPacket + packetIndex, txData.data(), txData_length);
+        packetIndex += txData_length;
+
+        //! add CRC to txPacket
+        uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - CRC_LENGTH);
+        txPacket[packetIndex++] = lowByte(txCrc);
+        txPacket[packetIndex++] = highByte(txCrc);
+
+        // Serial.write(txPacket, txPacket_length);
+        serial1SendData(txPacket, packetIndex);
+
+    }
+  /*
     if (Serial1.available() >= RECV_MIN_PACKET_SIZE)
     {
       uint8_t rxPacket_forward[RECV_MIN_PACKET_SIZE] = {};
@@ -175,9 +220,9 @@ void loop() {
           rxPacket_forward[i] = Serial1.read();
         }
 
-        uint8_t rxBoardType = rxPacket_forward[HEADER_PACKET_LENGTH];
-        uint8_t rxCommand = rxPacket_forward[HEADER_PACKET_LENGTH + 1];
-        size_t rxPacket_length = rxPacket_forward[HEADER_PACKET_LENGTH + 2];
+        uint8_t rxBoardType = rxPacket_forward[HEADER_PACKET_LENGTH]; // id
+        size_t rxPacket_length = rxPacket_forward[HEADER_PACKET_LENGTH + 1]; // length
+        uint8_t rxCommand = rxPacket_forward[HEADER_PACKET_LENGTH + 2]; // command
 
         //! make rxPaket
         uint8_t rxPacket[rxPacket_length] = {};
@@ -218,7 +263,7 @@ void loop() {
         txPacket[packetIndex++] = (uint8_t)txPacket_length;
         txPacket[packetIndex++] = rxCommand; //! command
         txPacket[packetIndex++] = PACKET_OPTION; // option
-        txPacket[packetIndex++] = tx_errorStatus; //! error
+        //txPacket[packetIndex++] = tx_errorStatus; //! error
 
         //! add txData to txPacket
         if (!txData.empty())
@@ -236,6 +281,7 @@ void loop() {
         serial1SendData(txPacket, packetIndex);
       }
     } // if (Serial.available() ...
+    */
   }
   //double =  (( end - start ) / 1000000.);
   //average_fps += tmp_fps ;
@@ -295,7 +341,7 @@ bool readSerial(){
   digitalWrite(TXDEN, LOW);
   //Serial.println("readSeiral inininin");
   uint8_t incomingByte = 0;  // for incoming serial data
-  std::array<uint8_t, 5> recv_data;
+  std::array<uint8_t, 8> recv_data;
   bool fg = false;
   while (Serial1.available() ) {
     // read the incoming byte:
@@ -305,7 +351,7 @@ bool readSerial(){
     if(check_recv_data[0] == incomingByte) {
       
       correct_count++;
-      for(int i = 1; i < 5; i++) {
+      for(int i = 1; i < 8; i++) {
         incomingByte = Serial1.read();
         //Serial.println(incomingByte);
         if(check_recv_data[i] == incomingByte) {
@@ -315,7 +361,7 @@ bool readSerial(){
         }
       }
     }
-    if(correct_count == 5) {
+    if(correct_count == 8) {
       fg = true;
       //	break;
     }
