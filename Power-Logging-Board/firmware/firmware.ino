@@ -466,7 +466,7 @@ void loop()
         txPacket[packetIndex++] = tx_errorStatus; //! error
 
         //! add txData to txPacket
-        if (!readable_Addresses.empty() && !txData.empty())
+        if (!txData.empty())
         {
           memcpy(txPacket + packetIndex, txData.data(), txData_length);
           packetIndex += txData_length;
@@ -513,6 +513,16 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
      * @brief:
      * @return:
      */
+    //float cardSize =sd.card()->sectorCount() * 0.512;
+    uint32_t free = sd.vol()->freeClusterCount() * sd.vol()->sectorsPerCluster() * 0.512;
+    uint8_tToUint32_t freeSize;
+    freeSize.uint32_tData = free;
+    txData_length = sizeof(uint32_t);
+    txData.resize(txData_length);
+    for (int i = 0; i < txData_length; i++)
+    {
+      txData[i] = freeSize.uint8_tData[i];
+    }
     break;
   }
   case rescanI2CCommand:
