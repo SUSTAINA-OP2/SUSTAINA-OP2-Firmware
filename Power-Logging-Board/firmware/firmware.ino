@@ -59,8 +59,8 @@ constexpr uint8_t return_command_mask = 0b01111111;
 constexpr size_t headerPacket_length = sizeof(headerPacket);
 constexpr size_t crc_length = sizeof(uint16_t);
 
-//! rx packet: headder + (id + command + length) + data * n + crc
-constexpr size_t rxPacket_forward_length = headerPacket_length + 3;
+//! rx packet: headder + (id + length + command + option ) + data * n + crc
+constexpr size_t rxPacket_forward_length = headerPacket_length + 4;
 constexpr size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
 
 //! tx packet: headder + (id + command + length + error) + txData + crc
@@ -420,8 +420,10 @@ void loop()
         }
 
         uint8_t rxBoardType = rxPacket_forward[headerPacket_length];
-        uint8_t rxCommand = rxPacket_forward[headerPacket_length + 1];
-        size_t rxPacket_length = rxPacket_forward[headerPacket_length + 2];
+        size_t rxPacket_length = rxPacket_forward[headerPacket_length + 1];
+        uint8_t rxCommand = rxPacket_forward[headerPacket_length + 2];
+        uint8_t rxOption = rxPacket_forward[headerPacket_length + 3];
+
 
         //! make rxPaket
         uint8_t rxPacket[rxPacket_length] = {};
@@ -459,8 +461,8 @@ void loop()
         packetIndex += headerPacket_length;
 
         txPacket[packetIndex++] = id;
-        txPacket[packetIndex++] = rxCommand & return_command_mask; //! command
         txPacket[packetIndex++] = (uint8_t)txPacket_length;
+        txPacket[packetIndex++] = rxCommand & return_command_mask; //! command
         txPacket[packetIndex++] = tx_errorStatus; //! error
 
         //! add txData to txPacket
