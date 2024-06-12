@@ -5,7 +5,9 @@
 
 // PIN宣言
 constexpr byte NEOPIXEL_LED_PIN = 8; // これだけはesp32の方のピン番号
-constexpr byte TXDEN = 5;
+constexpr byte RX_PIN = 0;
+constexpr byte TX_PIN = 1;
+constexpr byte TXDEN_PIN = 2;
 constexpr byte GREEN_SWITCH_PIN = 3;
 constexpr byte RED_SWITCH_PIN = 4;
 constexpr byte BOARD_LED_RED = 14;
@@ -25,6 +27,7 @@ constexpr uint8_t LED_OFF = 0;
 constexpr uint16_t REQUEST_BUTTON_STATE = (1 << 15);
 
 constexpr uint8_t PUSHCOUNT_RESET_THRESHOLD = LOOP_HZ / 2; // 0.5秒以上要求されなかったらリセットする。
+
 
 /*
 arduinoに送るパケットの構成
@@ -182,7 +185,7 @@ void setup()
   digitalWrite(BOARD_LED_GREEN, HIGH); // Green OFF
   digitalWrite(BOARD_LED_BLUE, LOW);   // Blue ON
 
-  Serial.begin(115200); // 0がusbのやつらしい
+  Serial1.begin(1000000, SERIAL_8N1, RX_PIN, TX_PIN); // 0がusbのやつらしい
   pixels.begin();
   pixels.clear();
   pixels.show(); // 最初はledをリセットする
@@ -190,15 +193,16 @@ void setup()
 
 void loop()
 {
+  digitalWrite(TXDEN_PIN, LOW);    // 受信可能にする
   delay(DELAYVAL_MS - 2); // 他で送れる事があるので、少し早くする
   auto current_state = button_state.readButtonState();
-  if (Serial.available() > 1) // 2byte以上来たら読み込む
+  if (Serial1.available() > 1) // 2byte以上来たら読み込む
   {
     uint16_t receive_data = 0;
     uint8_t read_count = 0;
-    while (Serial.available())
+    while (Serial1.available())
     {
-      uint8_t tmp = Serial.read();
+      uint8_t tmp = Serial1.read();
       if (read_count == 0)
         receive_data = tmp;
       else
@@ -209,7 +213,9 @@ void loop()
     {
       auto last_state = button_state.lastButtonState();
       char send_buf = static_cast<char>(last_state);
-      Serial.write(send_buf);
+      digitalWrite(TXDEN_PIN, HIGH); // 送信可能にする
+      Serial1.write(send_buf);
+      Serial1.flush();
       // debug用出力を要求された時
       // if ((receive_data & (1 << 14)) != 0)
       // {
