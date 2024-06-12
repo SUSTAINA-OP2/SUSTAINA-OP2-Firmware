@@ -186,6 +186,8 @@ void setup()
   digitalWrite(BOARD_LED_BLUE, LOW);   // Blue ON
 
   Serial1.begin(1000000, SERIAL_8N1, RX_PIN, TX_PIN); // 0がusbのやつらしい
+  pinMode(TXDEN_PIN, OUTPUT);
+
   pixels.begin();
   pixels.clear();
   pixels.show(); // 最初はledをリセットする
