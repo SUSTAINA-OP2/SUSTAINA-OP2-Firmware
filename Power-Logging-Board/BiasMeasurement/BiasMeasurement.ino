@@ -46,6 +46,8 @@ void setupINA226s()
     if (INA.back().begin())
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
+      INA.back().setShuntVoltageConversionTime(4); 
+      INA.back().setAverage(2);  // センサ値のsample数を決定する ここでのsample数は16
     }
   }
 }
@@ -55,7 +57,7 @@ void setup()
 {
   initializeSerial(serial1Baudrate);
   Wire.begin();
-  Wire.setClock(1000000L); //! I2C Set clock change 100kHz to 400kHz
+  Wire.setClock(4000000L); //! I2C Set clock change 100kHz to 400kHz
 
   I2cScanner();
   setupINA226s();
