@@ -62,13 +62,13 @@ static int32_t icm_mounting_matrix[9] = { (1 << 30), 0, 0, 0, (1 << 30), 0, 0, 0
 
 /* Full Scale Range */
 #if IS_HIGH_RES_MODE
-#if defined(ICM42686P) || defined(ICM42686V)
-static const int32_t acc_fsr = 32; /* +/- 32g */
-static const int32_t gyr_fsr = 4000; /* +/- 4000dps */
-#else
-static const int32_t acc_fsr = 16; /* +/- 16g */
-static const int32_t gyr_fsr = 2000; /* +/- 2000dps */
-#endif
+	#if defined(ICM42686P) || defined(ICM42686V)
+	static const int32_t acc_fsr = 32; /* +/- 32g */
+	static const int32_t gyr_fsr = 4000; /* +/- 4000dps */
+	#else
+	static const int32_t acc_fsr = 16; /* +/- 16g */
+	static const int32_t gyr_fsr = 2000; /* +/- 2000dps */
+	#endif
 #else
 static const int32_t acc_fsr = 4; /* +/- 4g */
 static const int32_t gyr_fsr = 2000; /* +/- 2000dps */
@@ -119,6 +119,7 @@ extern uint32_t hr46_output_mode;
 extern uint32_t data_to_print_hr;
 extern void printDataToHR(const float* gyro,const float* accel,const float* quat,const float temperature);
 extern void outputData1000hzToHR46(const char* send_buffer,const unsigned int send_size);
+static int16_t error_lists[4] = {0};  //Error type = -1 INV_ERROR, -3 INV_ERROR_TRANSPORT, -5 INV_ERROR_SIZE, -11 INV_ERROR_BAD_ARG
 
 /* --------------------------------------------------------------------------------------
  *  static function declaration
@@ -177,6 +178,43 @@ void setData(const float* gyro,const float* accel,const float* quat,const float 
 	return;
 }
 
+
+void setErrorData(const int16_t error_status)
+{
+	const int index = hr_1khz_data_counter % hr_data_array_elem_size;
+	switch (error_status)
+	{
+	case -1:
+		error_lists[0]++;
+		break;
+	case -3:
+		error_lists[1]++;
+		break;
+	case -5:
+		error_lists[2]++;
+		break;
+	case -11:
+		error_lists[3]++;
+		break;
+	default:
+		break;
+	}
+	// Set error status to all data.
+    hr_data_array[index].gyro[0] = 0;
+	hr_data_array[index].gyro[1] = 0;
+	hr_data_array[index].gyro[2] = 0;
+	hr_data_array[index].acc[0] = 0;
+	hr_data_array[index].acc[1] = 0;
+	hr_data_array[index].acc[2] = 0;
+	hr_data_array[index].quat[0] = 0;
+	hr_data_array[index].quat[1] = 0;
+	hr_data_array[index].quat[2] = 0;
+	hr_data_array[index].quat[3] = 0;
+	hr_data_array[index].temperature = 0;
+    hr_1khz_data_counter++;
+	return;
+}
+
 void convert_and_setData(void)
 {
 	float acc_g[3];
@@ -201,9 +239,12 @@ unsigned int writeDataToBuffAndSend()
 	memset(send_buff,0,sizeof(send_buff));
 	send_buff[0] = SEND_PACKET_HEADER;
 	send_buff[1] = SEND_PACKET_HEADER;
-	send_buff[2] = SEND_PACKET_DUMMY_COMMAND;
-	send_buff[3] = SEND_PACKET_DUMMY_COMMAND;
-	send_buff[4] = SEND_PACKET_DUMMY_COMMAND;
+	send_buff[2] = error_lists[0] | (error_lists[1] << 4); // INV_ERROR + INV_ERROR_TRANSPORT
+	send_buff[3] = error_lists[2] | (error_lists[3] << 4); // INV_ERROR_SIZE + INV_ERROR_BAD_ARG
+	error_lists[0] = 0;
+	error_lists[1] = 0;
+	error_lists[2] = 0;
+	error_lists[3] = 0;
 	send_buff[send_data_size_1000hz_except_imudata + hr_data_array_byte_size - 2] = SEND_PACKET_CRC_DUMMY;
 	send_buff[send_data_size_1000hz_except_imudata + hr_data_array_byte_size - 1] = SEND_PACKET_CRC_DUMMY;
     if(hr_1khz_data_counter > hr_data_array_elem_size)
@@ -442,6 +483,16 @@ int GetDataFromInvDevice(void)
 
 void HandleInvDeviceFifoPacket(inv_icm426xx_sensor_event_t *event)
 {
+	if(event->error_status != 0)
+	{	
+		// Some error occured.
+		if(hr46_output_mode == HR46_1000HZ_MODE)
+		{
+			setErrorData(event->error_status);
+		}
+		return;
+	}
+
 	uint64_t irq_timestamp = 0;
 	uint64_t extended_timestamp;
 

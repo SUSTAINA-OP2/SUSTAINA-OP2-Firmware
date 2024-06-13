@@ -121,6 +121,7 @@
 
 /* 1khz output tool for HR46   */
 void setData(const float* gyro,const float* accel,const float* quat,const float temperature);
+void setErrorData(const int16_t error_status);
 unsigned int writeDataToBuffAndSend();
 enum {
     HR46_200HZ_MODE,
