@@ -355,6 +355,8 @@ void setupINA226s()
     if (INA.back().begin())
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
+      INA.back().setShuntVoltageConversionTime(4); 
+      INA.back().setAverage(2);  // センサ値のsample数を決定する ここでのsample数は16
     }
   }
 }
