@@ -3,6 +3,9 @@
 #include <avr/power.h>
 #endif
 
+#include "./src/CRC16/CRC16.h"
+#include <vector>
+
 // PIN宣言
 constexpr byte NEOPIXEL_LED_PIN = 6; // これだけはesp32の方のピン番号
 constexpr byte RX_PIN = 0;
@@ -13,6 +16,40 @@ constexpr byte RED_SWITCH_PIN = 5;
 constexpr byte BOARD_LED_RED = 14;
 constexpr byte BOARD_LED_GREEN = 16;
 constexpr byte BOARD_LED_BLUE = 15;
+
+// シリアル通信用の定数
+constexpr uint8_t SERIAL_BAUDRATE = 1000000;
+
+constexpr uint8_t headerPacket[] = {0xFE, 0xFE};
+
+//! USB-to-Quad-RS-485-Conv-Module:  0xA0 (ID: 160)
+//! Control-Switches-Board:          0xA1 (ID: 161)
+//! Power Logging Board:             0xA2 (ID: 162)
+//! Audio Board:                     0xA3 (ID: 163)
+constexpr uint8_t id = 0xA1;
+
+constexpr uint8_t firmwareVersion = 0x00;
+
+//! rx packet: headder + (id + length + command + option ) + data * n + crc
+constexpr size_t headerPacket_length = sizeof(headerPacket);
+constexpr size_t crc_length = sizeof(uint16_t);
+constexpr size_t rxPacket_forward_length = headerPacket_length + 4;
+constexpr size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
+
+//! tx packet: headder + (id + command + length + error) + txData + crc
+constexpr size_t txPacket_min_length = headerPacket_length + 4 + crc_length;
+
+// コマンドの定義
+constexpr uint8_t Command = 0x01;
+
+constexpr uint8_t crc_errorStatus = 0b00000010;
+constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
+constexpr uint8_t commandProcessing_errorStatus = 0b00000100;
+constexpr uint8_t return_command_mask = 0b01111111;
+
+size_t txData_length = 0;
+std::vector<uint8_t> txData(txData_length);
+CRC16 CRC;
 
 // 100hzを基準とする。
 constexpr uint8_t DELAYVAL_MS = 10;
@@ -185,7 +222,7 @@ void setup()
   digitalWrite(BOARD_LED_GREEN, HIGH); // Green OFF
   digitalWrite(BOARD_LED_BLUE, LOW);   // Blue ON
 
-  Serial1.begin(1000000, SERIAL_8N1, RX_PIN, TX_PIN); // 0がusbのやつらしい
+  Serial1.begin(SERIAL_BAUDRATE, SERIAL_8N1, RX_PIN, TX_PIN); // 0がusbのやつらしい
   pinMode(TXDEN_PIN, OUTPUT);
 
   pixels.begin();
@@ -202,42 +239,82 @@ void loop()
   {
     uint16_t receive_data = 0;
     uint8_t read_count = 0;
-    while (Serial1.available())
+    if (Serial1.available() >= rxPacket_min_length)
     {
-      uint8_t tmp = Serial1.read();
-      if (read_count == 0)
-        receive_data = tmp;
-      else
-        receive_data = (receive_data << 8) | tmp;
-      read_count++;
-    }
-    if ((receive_data & REQUEST_BUTTON_STATE) > 0)
-    {
-      auto last_state = button_state.lastButtonState();
-      char send_buf = static_cast<char>(last_state);
-      digitalWrite(TXDEN_PIN, HIGH); // 送信可能にする
-      Serial1.write(send_buf);
-      Serial1.flush();
-      // debug用出力を要求された時
-      // if ((receive_data & (1 << 14)) != 0)
-      // {
-      //   if (last_state == ButtonStateEnum::RED_PUSHED_OVER_3TIMES)
-      //   {
-      //     Serial.write("Red pushed over 3 times");
-      //   }
-      //   else if (last_state == ButtonStateEnum::RED_PUSHED)
-      //   {
-      //     Serial.write("Red pushed");
-      //   }
-      //   else if (last_state == ButtonStateEnum::GREEN_PUSHED)
-      //   {
-      //     Serial.write("Green pushed");
-      //   }
-      //   else
-      //   {
-      //     Serial.write("Not pushed");
-      //   }
-      // }
+      uint8_t rxPacket_forward[rxPacket_forward_length] = {};
+      uint8_t tx_errorStatus = 0b00000000;
+
+      if (checkHeader(headerPacket, headerPacket_length, rxPacket_forward))
+      {
+        for (int i = headerPacket_length; i < rxPacket_forward_length; i++)
+        {
+          rxPacket_forward[i] = Serial1.read();
+        }
+
+        uint8_t rxBoardType = rxPacket_forward[headerPacket_length];
+        size_t rxPacket_length = rxPacket_forward[headerPacket_length + 1];
+        uint8_t rxCommand = rxPacket_forward[headerPacket_length + 2];
+        uint8_t rxOption = rxPacket_forward[headerPacket_length + 3];
+
+
+        //! make rxPaket
+        uint8_t rxPacket[rxPacket_length] = {};
+        for (int i = 0; i < rxPacket_length; i++)
+        {
+          if (i < rxPacket_forward_length)
+          {
+            rxPacket[i] = rxPacket_forward[i];
+          }
+          else
+          {
+            rxPacket[i] = Serial1.read();
+          }
+        }
+
+        if (CRC.checkCrc16(rxPacket, rxPacket_length))
+        {
+          processCommand(rxCommand, &tx_errorStatus, rxPacket);
+          uint8_t receive_data_1 = rxPacket[rxPacket_forward_length];
+          uint8_t receive_data_2 = rxPacket[rxPacket_forward_length + 1];
+          receive_data = (receive_data_1 << 8) | receive_data_2;
+        }
+        else
+        {
+          tx_errorStatus |= crc_errorStatus;
+        }
+
+        //! tx packet: headder + (command + length + error) + txData + crc
+        //! data: (address + voldtage + cureent) * n
+        size_t txPacket_length = txPacket_min_length + txData_length;
+
+        //! make txPacket
+        uint8_t txPacket[txPacket_length] = {};
+        size_t packetIndex = 0;
+
+        //! add forward txPacket
+        memcpy(txPacket, headerPacket, headerPacket_length);
+        packetIndex += headerPacket_length;
+
+        txPacket[packetIndex++] = id;
+        txPacket[packetIndex++] = (uint8_t)txPacket_length;
+        txPacket[packetIndex++] = rxCommand & return_command_mask; //! command
+        txPacket[packetIndex++] = tx_errorStatus; //! error
+
+        //! add txData to txPacket
+        if (!txData.empty())
+        {
+          memcpy(txPacket + packetIndex, txData.data(), txData_length);
+          packetIndex += txData_length;
+        }
+
+        //! add CRC to txPacket
+        uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - crc_length);
+        txPacket[packetIndex++] = lowByte(txCrc);
+        txPacket[packetIndex++] = highByte(txCrc);
+
+        // Serial.write(txPacket, txPacket_length);
+        serial1SendData(txPacket, packetIndex);
+      }
     }
     setLedState(receive_data);
   }
@@ -261,4 +338,41 @@ void loop()
     digitalWrite(BOARD_LED_GREEN, HIGH); // Green OFF
     digitalWrite(BOARD_LED_BLUE, HIGH);  // Blue OFF
   }
+}
+
+void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPacket[])
+{
+  txData_length = 0;
+  switch (command)
+  {
+    case Command:
+    {
+      auto last_state = button_state.lastButtonState();
+      char send_buf = static_cast<char>(last_state);
+      txData_length = 1;
+      txData.push_back(send_buf);
+      break;
+    }
+  }
+}
+
+void serial1SendData(uint8_t *txPacket, const size_t &packet_num)
+{
+  digitalWrite(TXDEN_PIN, HIGH);
+  Serial1.write(txPacket, packet_num);
+  Serial1.flush();
+  digitalWrite(TXDEN_PIN, LOW);
+}
+
+bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[])
+{
+  for (int i = 0; i < length; i++)
+  {
+    if (Serial1.read() != header[i])
+    {
+      return false;
+    }
+    packet[i] = header[i];
+  }
+  return true;
 }
