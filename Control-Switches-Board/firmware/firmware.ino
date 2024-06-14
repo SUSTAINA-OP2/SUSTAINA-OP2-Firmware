@@ -4,12 +4,12 @@
 #endif
 
 // PIN宣言
-constexpr byte NEOPIXEL_LED_PIN = 8; // これだけはesp32の方のピン番号
+constexpr byte NEOPIXEL_LED_PIN = 6; // これだけはesp32の方のピン番号
 constexpr byte RX_PIN = 0;
 constexpr byte TX_PIN = 1;
 constexpr byte TXDEN_PIN = 2;
-constexpr byte GREEN_SWITCH_PIN = 3;
-constexpr byte RED_SWITCH_PIN = 4;
+constexpr byte GREEN_SWITCH_PIN = 4;
+constexpr byte RED_SWITCH_PIN = 5;
 constexpr byte BOARD_LED_RED = 14;
 constexpr byte BOARD_LED_GREEN = 16;
 constexpr byte BOARD_LED_BLUE = 15;
