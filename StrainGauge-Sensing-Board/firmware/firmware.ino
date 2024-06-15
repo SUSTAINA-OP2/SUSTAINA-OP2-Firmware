@@ -44,6 +44,8 @@ void serial1SendData(uint8_t *txPacket, const size_t &packet_num);
 bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[]);
 void processCommand(const uint8_t command, uint8_t *tx_errorStatus, uint8_t rxPacket[]);
 
+constexpr long BAUDRATE = 1000000;
+
 
 
 bool readSerial();
@@ -88,7 +90,7 @@ void initADS() {
 int32_t offset = 0;
 long count = 0;
 void setup() {
-  Serial1.begin(3000000, SERIAL_8N1, rx, tx);
+  Serial1.begin(BAUDRATE, SERIAL_8N1, rx, tx);
 
   initADS();
 
