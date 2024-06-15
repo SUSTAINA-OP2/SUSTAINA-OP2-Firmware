@@ -18,7 +18,7 @@ constexpr byte BOARD_LED_GREEN = 16;
 constexpr byte BOARD_LED_BLUE = 15;
 
 // シリアル通信用の定数
-constexpr uint8_t SERIAL_BAUDRATE = 1000000;
+constexpr long SERIAL_BAUDRATE = 1000000;
 
 constexpr uint8_t headerPacket[] = {0xFE, 0xFE};
 
@@ -40,7 +40,7 @@ constexpr size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
 constexpr size_t txPacket_min_length = headerPacket_length + 4 + crc_length;
 
 // コマンドの定義
-constexpr uint8_t Command = 0x01;
+constexpr uint8_t Command = 0xC0;
 
 constexpr uint8_t crc_errorStatus = 0b00000010;
 constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
@@ -234,6 +234,8 @@ void loop()
 {
   digitalWrite(TXDEN_PIN, LOW);    // 受信可能にする
   delay(DELAYVAL_MS - 2); // 他で送れる事があるので、少し早くする
+  txData.clear();
+  txData_length = 0;
   auto current_state = button_state.readButtonState();
   if (Serial1.available() > 1) // 2byte以上来たら読み込む
   {
@@ -276,7 +278,7 @@ void loop()
           processCommand(rxCommand, &tx_errorStatus, rxPacket);
           uint8_t receive_data_1 = rxPacket[rxPacket_forward_length];
           uint8_t receive_data_2 = rxPacket[rxPacket_forward_length + 1];
-          receive_data = (receive_data_1 << 8) | receive_data_2;
+          receive_data = (receive_data_2 << 8) | receive_data_1;
         }
         else
         {
@@ -342,7 +344,6 @@ void loop()
 
 void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPacket[])
 {
-  txData_length = 0;
   switch (command)
   {
     case Command:
