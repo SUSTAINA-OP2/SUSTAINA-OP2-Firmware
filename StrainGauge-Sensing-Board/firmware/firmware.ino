@@ -77,7 +77,7 @@ void initADS() {
   adc.setGain(ADS126X_GAIN_32);
   adc.setRate(ADS126X_RATE_38400);  //ADS126X_RATE_7200
   //adc.setRate(ADS126X_RATE_14400);
-  adc.setFilter(ADS126X_SINC1);
+  adc.setFilter(ADS126X_SINC4);
   adc.enableInternalReference();
   adc.startADC1();  // start conversion on ADC1
 
