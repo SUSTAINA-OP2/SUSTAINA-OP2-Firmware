@@ -3,6 +3,7 @@
 #include "./src/CRC16/CRC16.h"
 #include "./src/SdFat/SdFat.h"
 #include <vector>
+#include <set>
 #include <unordered_map>
 #include "Wire.h"
 
@@ -245,7 +246,7 @@ struct Stopwatch
 };
 
 //! get address of connected INA226
-std::vector<uint8_t> readable_Addresses; //! readable INA226 addresses
+std::set<uint8_t> readable_Addresses; //! readable INA226 addresses
 void I2cScanner()
 {
   uint8_t error = 0;
@@ -256,7 +257,7 @@ void I2cScanner()
     error = Wire.endTransmission();
     if (error == 0)
     {
-      readable_Addresses.push_back(address);
+      readable_Addresses.insert(address);
     }
   }
 }
@@ -347,9 +348,8 @@ uint8_tToUint16_t milliSeconds;
 void setupINA226s()
 {
   INA.clear();
-  for (size_t i = 0; i < readable_Addresses.size(); i++)
+  for (const auto&address : readable_Addresses) //setは狭義の弱順序に従うので、順番に来てくれる
   {
-    uint8_t address = readable_Addresses.at(i);
     INA.emplace_back(address);
 
     if (INA.back().begin())
@@ -539,10 +539,11 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
     size_t detected_ina_num = readable_Addresses.size();
     txData_length = detected_ina_num;
     txData.resize(txData_length);
-    for (int i = 0; i < detected_ina_num; i++)
+    size_t tmp_loop_index = 0;
+    for (const auto&address : readable_Addresses)
     {
-      uint8_t address = readable_Addresses.at(i);
-      txData.at(i) = address;
+      txData.at(tmp_loop_index) = address;
+      tmp_loop_index++;
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
         if (address == ina226_all_bias_data[j].getAddress())
@@ -598,9 +599,8 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       // Serial.printf("Address: %x, Voltage: %f, Current: %f\n", address, ina226_all_bias_data[ina_num].getVoltage(), ina226_all_bias_data[ina_num].getCurrent());
     }
 
-    for (int i = 0; i < readable_Addresses.size(); i++)
+    for (const auto& address :readable_Addresses)
     {
-      uint8_t address = readable_Addresses.at(i);
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
         if (address == ina226_all_bias_data[j].getAddress())
@@ -695,6 +695,7 @@ void initializeSDcard()
         Serial.print(fileName);
         Serial.println(" を作成しました。");
         created = true; // ファイルを作成したのでフラグを立てる
+        logData.println("Jetson_Time, Arduino_msec, Send_Data, addr40_Voltage, addr40_Current, addr41_Voltage, addr41_Current, addr42_Voltage, addr42_Current, addr43_Voltage, addr43_Current,addr44_Voltage, addr44_Current, addr45_Voltage, addr45_Current, addr46_Voltage, addr46_Current, addr47_Voltage, addr47_Current, addr48_Voltage, addr48_Current, addr49_Voltage, addr49_Current, addr4a_Voltage, addr4a_Current, addr4b_Voltage, addr4b_Current, addr4c_Voltage, addr4c_Current, addr4d_Voltage, addr4d_Current, addr4e_Voltage, addr4e_Current, addr4f_Voltage, addr4f_Current");
       }
       else
       {
@@ -743,11 +744,18 @@ void WriteSDcard()
   // char buffer[7];
 
   int32_t wrote_size = 0;
-  for (size_t i = 0; i < readable_Addresses.size(); i++)
+  for (uint8_t target_address = lowLimit_Address; target_address <= upperLimit_Address; target_address++)
   {
-    const uint8_t target_address = readable_Addresses.at(i);
-    wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "%02X,%4.2f,%5.0f,", target_address, 
-                          measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
+    if(readable_Addresses.find(target_address) != readable_Addresses.end())
+    {
+      wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "%4.2f,%5.0f,", target_address, 
+                            measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
+    }
+    else
+    {
+      strcat(dataStr, ",,");
+      wrote_size += 2;
+    }
     // itoa(target_address, buffer, 16);
     // strcat(dataStr, buffer);
     // strcat(dataStr, ", ");
