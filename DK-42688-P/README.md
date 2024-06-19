@@ -1,5 +1,7 @@
 # smartmotion_exaple_algo
 
+
+
 ## install
 
 以下をインストールする
@@ -15,6 +17,9 @@
 - **smart motion sample code**
     - ダウンロードリンク：https://invensense.tdk.com/products/dk-42688-p/
         - [DK-42688-P SmartMotion eMD](https://invensense.tdk.com/developers/download/dk-42688-p-smartmotion-emd-2-0-3/?wpdmdl=38397)をダウンロードする
+
+> [!CAUTION]
+> Only version 2.0.9 is supported by the patch file to be adapted to DK-42688-P SmartMotion eMD.
 
 ## 利用方法
 
