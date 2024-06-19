@@ -1,14 +1,5 @@
 --- examples/example-algo/main.c	Tue Feb 28 08:42:08 2023
 +++ examples/example-algo/main.c	Thu Jun  6 15:51:38 2024
-@@ -2,7 +2,7 @@
-  * ________________________________________________________________________________________________________
-  * Copyright (c) 2017 InvenSense Inc. All rights reserved.
-  *
-- * This software, related documentation and any modifications thereto (collectively “Software”) is subject
-+ * This software, related documentation and any modifications thereto (collectively is subject
-  * to InvenSense and its licensors' intellectual property rights under U.S. and international copyright
-  * and other intellectual property rights laws.
-  *
 @@ -64,7 +64,6 @@
  /* --------------------------------------------------------------------------------------
   *  Global variables

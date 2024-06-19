@@ -1,14 +1,5 @@
 --- examples/example-algo/example-algo.c	Tue Feb 28 08:42:08 2023
 +++ examples/example-algo/example-algo.c	Thu Jun 13 21:44:31 2024
-@@ -2,7 +2,7 @@
-  * ________________________________________________________________________________________________________
-  * Copyright (c) 2017 InvenSense Inc. All rights reserved.
-  *
-- * This software, related documentation and any modifications thereto (collectively “Software”) is subject
-+ * This software, related documentation and any modifications thereto is subject
-  * to InvenSense and its licensors' intellectual property rights under U.S. and international copyright
-  * and other intellectual property rights laws.
-  *
 @@ -62,13 +62,13 @@
  
  /* Full Scale Range */
