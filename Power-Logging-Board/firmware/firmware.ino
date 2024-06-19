@@ -48,9 +48,22 @@ constexpr uint8_t setupBiasCommand = 0xC4;
 constexpr uint8_t boardResetCommand = 0xC5;
 
 //! error status
-constexpr uint8_t crc_errorStatus = 0b00000010;
+/**
+    NO_ERROR                    = 0b0000'0000,
+    CRC_ERROR                   = 0b0000'0001,
+    COMMAND_NOTFOUND_ERROR      = 0b0000'0010,
+    COMMAND_PROCESSING_ERROR    = 0b0000'0100,
+
+    BOARD_SPECIFIC_ERROR1       = 0b0000'1000, // sdcard error
+    BOARD_SPECIFIC_ERROR2       = 0b0001'0000,
+    BOARD_SPECIFIC_ERROR3       = 0b0010'0000,
+    BOARD_SPECIFIC_ERROR4       = 0b0100'0000,
+    BOARD_SPECIFIC_ERROR5       = 0b1000'0000,
+*/
+constexpr uint8_t crc_errorStatus = 0b00000001;
 constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
 constexpr uint8_t commandProcessing_errorStatus = 0b00000100;
+constexpr uint8_t sdcard_errorStatus = 0b00001000;
 
 constexpr uint8_t return_command_mask = 0b01111111;
 
@@ -77,7 +90,9 @@ constexpr size_t INA226_MAX_NUM = 16;
 
 constexpr size_t FLOAT_DATA_LENGTH = sizeof(float);
 
+bool is_sdcard_error = false;
 bool is_send_data = false;
+const char* SDCARD_EXIST_CHECK_FILENAME = "sdcard_exist_check.txt";
 
 union uint8_tToUint32_t
 {
@@ -413,6 +428,10 @@ void loop()
     {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
       uint8_t tx_errorStatus = 0b00000000;
+      if(is_sdcard_error == true)
+      {
+        tx_errorStatus |= sdcard_errorStatus;
+      }
 
       if (checkHeader(headerPacket, headerPacket_length, rxPacket_forward))
       {
@@ -676,8 +695,13 @@ void initializeSDcard()
   if (!sd.begin(SD_CONFIG))
   {
     Serial.println(F("Failed to initialize SD card"));
+    is_sdcard_error = true;
     return;
   }
+  if(!sd.exists(SDCARD_EXIST_CHECK_FILENAME)){
+    sd.open(SDCARD_EXIST_CHECK_FILENAME, FILE_WRITE).close();
+  }
+  is_sdcard_error = false;
 
   int fileNumber = 1;   // ファイル番号の開始
   char fileName[12];    // ファイル名を格納する配列
@@ -771,10 +795,18 @@ void WriteSDcard()
   dataStr[wrote_size] = '\n';
   ++wrote_size;
   cached_size += wrote_size;
-  logData.write(dataStr,wrote_size);
+  if(sd.exists(SDCARD_EXIST_CHECK_FILENAME)){
+    logData.write(dataStr,wrote_size);
+  }else{
+     is_sdcard_error = true;
+  }
   if(cached_size > 4096) //4KB以上キャッシュされたらフラッシュする
   {
-    logData.flush();
+    if(sd.exists(SDCARD_EXIST_CHECK_FILENAME)){
+      logData.flush();
+    }else{
+      is_sdcard_error = true;
+    }
     // Serial.printf("Freq :: %f\n",freq_calc.getFreq(time_data));
     cached_size = 0;
   }
