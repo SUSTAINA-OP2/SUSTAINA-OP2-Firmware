@@ -59,8 +59,9 @@ bash apply_patch.bash
 12. Tools -> Device Programming -> Applyから書き込む
 ![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/ec3f219e-8db8-41e4-98e7-7e61c7c76af0)
 
+![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53966346/2eb03aa2-3aa6-46a4-aeb3-46a63ea4b4d9)
 
-
+![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53966346/1cb0359f-7555-42b1-8417-9f6f9816cf48)
 
 
 
