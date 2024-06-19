@@ -47,9 +47,16 @@ bash apply_patch.bash
 ![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/0593d849-9f44-45db-a394-ea8430699dff)
 
 9. Build -> Build Solutionからビルドを行う
+
 ![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/c2f9bde5-16ff-43d7-8df1-b146fa21027f)
 
-10. Tools -> Device Programming -> Applyから書き込む
+10. 後述する Setting of jumper pins on the board に従ってボードのピン配置を設定する
+    
+11. 画像のように，「FTDI USB」と「EDBG USB」のUSB ポートを使用し，PCと接続する．
+
+<img src="https://github.com/citbrains/citbrains_humanoid/assets/53966346/5cdc0fe0-7457-4877-913e-01b1b06a02cc" width="50%" />
+
+12. Tools -> Device Programming -> Applyから書き込む
 ![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/ec3f219e-8db8-41e4-98e7-7e61c7c76af0)
 
 
