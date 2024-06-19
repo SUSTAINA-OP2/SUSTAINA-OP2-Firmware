@@ -26,6 +26,11 @@ After write eeprom, reload Drivers:
 
 ## How to write EEPROM
 
+USB Hubの接続図
+
+![IMG_20240607_173145](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53966346/50582030-cb51-4132-97cc-a7e61ba1ee26)
+
+
 1. ``` lsusb -t ``` を行いFT4232Hのバスの場所を確認する.
 2.  AnkerのUSBハブの場合、ケーブルを左側、USBポートを上向きにした時、ポート番号は左から4,3,2,1である.ここで右半身はポート3、左半身はポート4である.
 3.  ``` cd /sys/bus/usb/drivers/usb/ ``` に移動.
