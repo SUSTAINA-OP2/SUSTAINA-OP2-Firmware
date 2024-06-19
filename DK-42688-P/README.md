@@ -1,9 +1,25 @@
 # smartmotion_exaple_algo
 ## 利用方法
-1. microchip studioをインストール
-2. DK-42688-P用のソフトウェアサンプルをダウンロード https://invensense.tdk.com/products/dk-42688-p/#documentation
-3. その中の、sources/examples/example-algoに、このリポジトリの中身をコピー
-4. microchip studioで、プロジェクトを開いてビルド、書き込み
+
+1. git bashをインストールする
+2. smatrmotionのソースコードをダウンロードする。
+3. 本リポジトリ/DK-42688-Pに、上記ソースコード直下に入っているフォルダ群（画像以下）をコピーする
+![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/cc427450-6193-4239-9406-c468a534f6cd)
+
+4. git bashを操作し、/DK-42688-Pまで移動する
+5. bash apply_patch.bashを実行する
+6. microchip-studioをインストールする
+7. microchip-studioを起動し、File -> Open -> project/Solutionから、先ほどコピーしたsources/examples/example-algo/example-algo.cprojを開く
+![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/0593d849-9f44-45db-a394-ea8430699dff)
+8. Build -> Build Solutionからビルドを行う
+![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/c2f9bde5-16ff-43d7-8df1-b146fa21027f)
+9. Tools -> Device Programming -> Applyから書き込む
+![image](https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53361179/ec3f219e-8db8-41e4-98e7-7e61c7c76af0)
+
+
+
+
+
 
 # Setting of jumper pins on the board
 
