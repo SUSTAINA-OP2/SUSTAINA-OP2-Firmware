@@ -9,7 +9,10 @@
 
 #include <ctime>
 
-#define DEBUG 0
+#define DEBUG 1
+
+// freeRTOS settings.
+#define INCLUDE_vTaskSuspend   1
 
 /**
    settings by users
@@ -89,6 +92,10 @@ constexpr size_t JETSON_MILL_TIME_LENGTH = 2;
 constexpr size_t INA226_MAX_NUM = 16;
 
 constexpr size_t FLOAT_DATA_LENGTH = sizeof(float);
+
+const char *filename_for_sdcard_exists = "does_sdcard_exists.csv";
+void initializeSDcard();    // forward declaration
+
 
 bool is_sdcard_error = false;
 bool is_send_data = false;
@@ -259,6 +266,200 @@ struct Stopwatch
   }
 };
 
+// ----------------------- SDcard task ---------------------------------
+volatile SemaphoreHandle_t shared_data_semaphore = NULL;
+
+struct SDWriter
+{
+  SdFat *sd_;
+  File *logData_;
+  static constexpr size_t sd_write_buffer_size_ = 8192;
+  static constexpr size_t data_buffer_size_ = 8192;   // 4096 + 1024
+  char sd_write_buffer_[sd_write_buffer_size_];
+  char data_buffer_[data_buffer_size_];
+  size_t current_data_size_;
+  bool sd_card_not_exist_ = false;
+  
+  SDWriter() : sd_(NULL), logData_(NULL),current_data_size_(0)
+  {
+    memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));
+    memset(data_buffer_, 0, sizeof(data_buffer_));
+  };
+
+  void setSDcard(SdFat *sd, File *logData)
+  {
+    //全てのロックを取得
+    if(shared_data_semaphore == NULL)
+    {
+      shared_data_semaphore = xSemaphoreCreateMutex();
+    }
+    while(true)
+    {
+      if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)    //    ------------------------------------- Lock Acuqire
+      {
+        sd_ = sd;
+        logData_ = logData;
+        xSemaphoreGive(shared_data_semaphore);                             //    ------------------------------------- Lock Release
+        break;
+      }
+    }
+  }
+  
+  void addData(const char *data,const size_t& data_sizes)
+  {
+    if((data_sizes > data_buffer_size_) || (sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL) || sd_card_not_exist_)
+    {
+      return;
+    }
+    if((current_data_size_ + data_sizes) >= data_buffer_size_)
+    {
+      return;
+    }
+    if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)     //    ------------------------------------- Lock Acuqire
+    {
+      strncpy(data_buffer_ + current_data_size_, data, data_sizes);
+      current_data_size_ += data_sizes;
+      xSemaphoreGive(shared_data_semaphore);                               //    ------------------------------------- Lock Release
+      // Serial.printf("[[addData]] data_sizes = %d\n",data_sizes);
+    }
+    return;
+  }
+
+  /**
+   * @brief Acquire lock immediately and write data to buffer
+   * 
+   * @param data const char* string data
+   */
+  void println(const char *data)
+  {
+    if((sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL))
+    {
+      return;
+    }
+    if((current_data_size_ + strlen(data)) >= data_buffer_size_)
+    {
+      return;
+    }
+    if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)      //    ------------------------------------- Lock Acuqire
+    {
+      strncpy(data_buffer_ + current_data_size_, data, strlen(data));
+      current_data_size_ += strlen(data);
+      xSemaphoreGive(shared_data_semaphore);                               //    ------------------------------------- Lock Release
+    }
+    return;
+  }
+
+  /**
+   * @brief Check if the SD card is available.
+   * @return true sd card is available.
+   * @return false sd card is not available.
+   * @note If the SD card is not available, the SD card is reconnected.
+   *       You must get the lock before calling this function.
+   */
+  bool checkSDCardAvailable()
+  {
+    if(sd_ == NULL && logData_ == NULL)
+    {
+      initializeSDcard();   //SDカードが一番最初にセットアップされていない時
+      sd_card_not_exist_ = true;
+      return !sd_card_not_exist_;
+    }
+    if(!sd_->exists(filename_for_sdcard_exists))
+    {
+      sd_card_not_exist_ = true;
+      if(sd_card_not_exist_)  //SDカードが無い状態 -> ある状態に変わった時
+      {
+        Serial.println("Start reconnecting SD card...");
+        sd_->end();           //SDカードを終了
+        initializeSDcard();   //SDカードを再度セットアップ
+        Serial.println("SD card is reconnected");
+        sd_card_not_exist_ = false;
+      }
+      return !sd_card_not_exist_;
+    }
+    return !sd_card_not_exist_;
+  }
+
+  /**
+   * @brief Check if the SD card is available.
+   * 
+   * @return true sd card is available.
+   * @return false sd card is not available.
+   * @note This function only checks the flag.If you want to check the SD card, use checkSDCardAvailable().
+   */
+  bool getSDCardAvailableFlag() const
+  {
+    return !sd_card_not_exist_;
+  }
+  
+  bool flush()
+  {
+    // セマフォを取る
+    memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));
+    if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)      //    ------------------------------------- Lock Acuqire
+    {
+      if(!checkSDCardAvailable())
+      {
+        Serial.println("SD card is not available");
+        xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
+        return false;
+      }
+      if(current_data_size_ < (sd_write_buffer_size_ - 500)) //あまり小さいサイズの時は書き込まない
+      {
+        xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
+        return false;
+      }
+      memcpy(sd_write_buffer_, data_buffer_, current_data_size_);         // データを書き込み用バッファにコピー
+      const size_t write_size = current_data_size_;
+      current_data_size_ = 0;
+      memset(data_buffer_, 0, sizeof(data_buffer_));                      //データバッファをクリア
+      xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
+      logData_->write(sd_write_buffer_, write_size);                      //書き込み
+      memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));              //書き込み用バッファをクリア
+      logData_->flush();                                                  //フラッシュ
+      return true;
+    }
+    return false;
+  }
+};
+
+SDWriter sd_writer;
+
+void sdWriterTask(void *pvParameters)
+{
+  Serial.println("SDWriterTask Start");
+  while (true)
+  {
+    if(shared_data_semaphore != NULL)
+    {
+      if(sd_writer.flush())
+      {
+        vTaskDelay(10 / portTICK_PERIOD_MS); //10msec毎にチェック
+      }
+      else
+      {
+        vTaskDelay(3 / portTICK_PERIOD_MS); //3msec待つ
+      }
+    }
+    else
+    {
+      vTaskDelay(100 / portTICK_PERIOD_MS); 
+    }
+  }
+}
+
+/**
+ * @brief Set the Up SD Write Task object.
+ *        This must be called last in setup() function.
+ */
+void setUpSDWriteTask() 
+{
+  shared_data_semaphore = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(sdWriterTask, "sdWriterTask", 4096, NULL, 1, NULL, 0);  // core 0 is another core of the loop()
+}
+
+// ----------------------- ---------------------------------
+
 //! get address of connected INA226
 std::set<uint8_t> readable_Addresses; //! readable INA226 addresses
 void I2cScanner()
@@ -271,6 +472,7 @@ void I2cScanner()
     error = Wire.endTransmission();
     if (error == 0)
     {
+      Serial.printf("I2C device found at address 0x%x\n", address);
       readable_Addresses.insert(address);
     }
   }
@@ -379,7 +581,7 @@ void setup()
 {
 #if DEBUG
   initializeSerial(serialBaudrate);
-#endif
+#endif //DEBUG
   initializeSerial1(serial1Baudrate);
   initializeSDcard();
 
@@ -388,6 +590,7 @@ void setup()
 
   I2cScanner();
   pinMode(txdenPin, OUTPUT);
+  setUpSDWriteTask();
 }
 
 void loop()
@@ -725,6 +928,20 @@ void initializeSDcard()
     }
     fileNumber++; // 次の番号へ
   }
+  while(true)
+  {
+    if(sd.exists(filename_for_sdcard_exists))
+    {
+      break;
+    }
+    File tmp = sd.open(filename_for_sdcard_exists, FILE_WRITE);
+    if(tmp)
+    {
+      tmp.close();
+      break;
+    }
+  }
+  sd_writer.setSDcard(&sd, &logData);
 }
 
 void WriteSDcard()
@@ -745,7 +962,7 @@ void WriteSDcard()
   }
   if(unix_time_data.length() != 0)
   {
-    logData.print(unix_time_data.c_str());
+    sd_writer.println(unix_time_data.c_str());
   }
 
   static char headerStr[32];
@@ -754,7 +971,7 @@ void WriteSDcard()
   if(header_write_size > 0)
   {
     cached_size += header_write_size;
-    logData.write(headerStr, header_write_size);
+    sd_writer.addData(headerStr, header_write_size);
   }
 
   is_send_data = false;
@@ -779,13 +996,7 @@ void WriteSDcard()
   dataStr[wrote_size] = '\n';
   ++wrote_size;
   cached_size += wrote_size;
-  logData.write(dataStr,wrote_size);
-  if(cached_size > 4096) //4KB以上キャッシュされたらフラッシュする
-  {
-    logData.flush();
-    // Serial.printf("Freq :: %f\n",freq_calc.getFreq(time_data));
-    cached_size = 0;
-  }
+  sd_writer.addData(dataStr,wrote_size);
 }
 
 void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tToUint16_t &milliSeconds)
