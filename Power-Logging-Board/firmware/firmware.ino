@@ -1,6 +1,6 @@
 //! Firmware for Power-Logging-Board in SUSTAINA-OP2
 #include "./src/INA226/INA226.h"
-#include "./src/CRC16/CRC16.h"
+#include "./src/BitOperations/crc16.hpp"
 #include "./src/SdFat/SdFat.h"
 #include <vector>
 #include <set>
@@ -347,7 +347,6 @@ Ina226MeasurementData measured_data;
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
 
-CRC16 CRC;
 SdFat sd;
 File logData;
 
@@ -459,7 +458,7 @@ void loop()
           }
         }
 
-        if (CRC.checkCrc16(rxPacket, rxPacket_length))
+        if (calcCRC16_XMODEM(rxPacket, rxPacket_length - crc_length) == (uint16_t)(rxPacket[rxPacket_length - crc_length] << 8) | (uint16_t)(rxPacket[rxPacket_length - crc_length + 1]))
         {
           processCommand(rxCommand, &tx_errorStatus, rxPacket);
         }
@@ -493,7 +492,7 @@ void loop()
         }
 
         //! add CRC to txPacket
-        uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - crc_length);
+        uint16_t txCrc = calcCRC16_XMODEM(txPacket, txPacket_length - crc_length);
         txPacket[packetIndex++] = lowByte(txCrc);
         txPacket[packetIndex++] = highByte(txCrc);
 
