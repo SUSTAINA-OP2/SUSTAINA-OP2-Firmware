@@ -92,7 +92,6 @@ constexpr size_t FLOAT_DATA_LENGTH = sizeof(float);
 
 bool is_sdcard_error = false;
 bool is_send_data = false;
-const char* SDCARD_EXIST_CHECK_FILENAME = "sdcard_exist_check.txt";
 
 union uint8_tToUint32_t
 {
@@ -698,9 +697,6 @@ void initializeSDcard()
     is_sdcard_error = true;
     return;
   }
-  if(!sd.exists(SDCARD_EXIST_CHECK_FILENAME)){
-    sd.open(SDCARD_EXIST_CHECK_FILENAME, FILE_WRITE).close();
-  }
   is_sdcard_error = false;
 
   int fileNumber = 1;   // ファイル番号の開始
@@ -795,18 +791,10 @@ void WriteSDcard()
   dataStr[wrote_size] = '\n';
   ++wrote_size;
   cached_size += wrote_size;
-  if(sd.exists(SDCARD_EXIST_CHECK_FILENAME)){
-    logData.write(dataStr,wrote_size);
-  }else{
-     is_sdcard_error = true;
-  }
+  logData.write(dataStr,wrote_size);
   if(cached_size > 4096) //4KB以上キャッシュされたらフラッシュする
   {
-    if(sd.exists(SDCARD_EXIST_CHECK_FILENAME)){
-      logData.flush();
-    }else{
-      is_sdcard_error = true;
-    }
+    logData.flush();
     // Serial.printf("Freq :: %f\n",freq_calc.getFreq(time_data));
     cached_size = 0;
   }
