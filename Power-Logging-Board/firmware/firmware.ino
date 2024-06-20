@@ -761,7 +761,6 @@ void WriteSDcard()
   
   static char dataStr[256];
   memset(dataStr, 0, sizeof(dataStr));
-  // char buffer[7];
 
   int32_t wrote_size = 0;
   for (uint8_t target_address = lowLimit_Address; target_address <= upperLimit_Address; target_address++)
@@ -776,17 +775,6 @@ void WriteSDcard()
       strcat(dataStr, ",,");
       wrote_size += 2;
     }
-    // itoa(target_address, buffer, 16);
-    // strcat(dataStr, buffer);
-    // strcat(dataStr, ", ");
-
-    // dtostrf(measured_data.getVoltageData(target_address), 5, 1, buffer);
-    // strcat(dataStr, buffer);
-    // strcat(dataStr, ", ");
-
-    // dtostrf(measured_data.getCurrentData(target_address), 5, 1, buffer);
-    // strcat(dataStr, buffer);
-    // strcat(dataStr, ", ");
   }
   dataStr[wrote_size] = '\n';
   ++wrote_size;
