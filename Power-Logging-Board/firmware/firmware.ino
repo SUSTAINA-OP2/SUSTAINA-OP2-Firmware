@@ -296,6 +296,10 @@ struct SDWriter
     {
       if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
       {
+        if(sd_ != NULL)
+        {
+          sd_->end();
+        }
         sd_ = sd;
         logData_ = logData;
         xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
@@ -331,7 +335,7 @@ struct SDWriter
    */
   void println(const char *data)
   {
-    if ((sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL))
+    if ((sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL) || sd_card_not_exist_)
     {
       return;
     }
@@ -360,7 +364,7 @@ struct SDWriter
     if (sd_ == NULL && logData_ == NULL)
     {
       initializeSDcard(); // SDカードが一番最初にセットアップされていない時
-      sd_card_not_exist_ = true;
+      sd_card_not_exist_ = false;
       return !sd_card_not_exist_;
     }
     if (!sd_->exists(filename_for_sdcard_exists))
@@ -944,23 +948,23 @@ void initializeSDcard()
       break;
     }
   }
+  Serial.println(F("SD Initializing succeeded!"));
   sd_writer.setSDcard(&sd, &logData);
 }
 
 void WriteSDcard()
 {
-  static bool is_sdcard_write = false;
-  static uint32_t cached_size = 0;
+  static bool does_unix_time_data_written_sdcard = false;
   time_data = millis();
   std::string unix_time_data;
   time_manager.timeUpdate();
   // freq_calc.count();
-  if (!is_sdcard_write)
+  if (!does_unix_time_data_written_sdcard)
   {
     unix_time_data = time_manager.getTime();
     if (!unix_time_data.empty())
     {
-      is_sdcard_write = true;
+      does_unix_time_data_written_sdcard = true;
     }
   }
   if (unix_time_data.length() != 0)
@@ -973,7 +977,6 @@ void WriteSDcard()
   int32_t header_write_size = snprintf(headerStr, sizeof(headerStr), ",%d,%d,", time_data, is_send_data);
   if (header_write_size > 0)
   {
-    cached_size += header_write_size;
     sd_writer.addData(headerStr, header_write_size);
   }
 
@@ -998,7 +1001,6 @@ void WriteSDcard()
   }
   dataStr[wrote_size] = '\n';
   ++wrote_size;
-  cached_size += wrote_size;
   sd_writer.addData(dataStr, wrote_size);
 }
 
