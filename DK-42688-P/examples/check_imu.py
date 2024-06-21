@@ -8,7 +8,6 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 # import matplotlib.pyplot as plt # グラフ作成のため
 
-DEFAULT_PORT = "/dev/ttyUSB0"
 IMU_DATA_BYTE_SIZE = 44
 IMU_PACKET_BYTE_SIZE = IMU_DATA_BYTE_SIZE * 10 + 2 + 3 + 2
 
@@ -225,9 +224,10 @@ class MainWindow(QMainWindow):
         # self.z_data = []
 
         # シリアルポート
-        port = DEFAULT_PORT
         if len(sys.argv) > 1 and sys.argv[1]:
             port = sys.argv[1]
+        else:
+            raise ValueError("Please specify the serial port !\n Usage: python check_imu.py [comport name]")
         self.comm = ImuCommunicater(port)
         self.worker = Worker(self.comm)
         self.worker.data_signal.connect(self.updateData)
