@@ -12,7 +12,7 @@
 #define DEBUG 1
 
 // freeRTOS settings.
-#define INCLUDE_vTaskSuspend   1
+#define INCLUDE_vTaskSuspend 1
 
 /**
    settings by users
@@ -94,8 +94,7 @@ constexpr size_t INA226_MAX_NUM = 16;
 constexpr size_t FLOAT_DATA_LENGTH = sizeof(float);
 
 const char *filename_for_sdcard_exists = "does_sdcard_exists.csv";
-void initializeSDcard();    // forward declaration
-
+void initializeSDcard(); // forward declaration
 
 bool is_sdcard_error = false;
 bool is_send_data = false;
@@ -125,8 +124,8 @@ private:
 
 public:
   INA226BiasData() = default;
-  INA226BiasData(uint8_t address, float voltage, float current) : address(address), voltage(voltage), current(current){};
-  ~INA226BiasData(){};
+  INA226BiasData(uint8_t address, float voltage, float current) : address(address), voltage(voltage), current(current) {};
+  ~INA226BiasData() {};
   void setAddress(const uint8_t &address)
   {
     this->address = address;
@@ -169,7 +168,7 @@ class TimeManager
 {
 public:
   TimeManager() = default;
-  ~TimeManager(){};
+  ~TimeManager() {};
   std::string getTime()
   {
     if (!is_set_time_)
@@ -220,8 +219,8 @@ struct FreqCalculator
 {
   uint32_t start_time;
   uint32_t write_count;
-  float    freq;
-  FreqCalculator() : start_time(0), write_count(0), freq(0.0f){};
+  float freq;
+  FreqCalculator() : start_time(0), write_count(0), freq(0.0f) {};
   void count()
   {
     if (start_time == 0)
@@ -231,7 +230,7 @@ struct FreqCalculator
     write_count++;
   }
 
-  float getFreq(const uint32_t& now_time)
+  float getFreq(const uint32_t &now_time)
   {
     if (start_time == 0)
     {
@@ -250,7 +249,7 @@ struct FreqCalculator
 struct Stopwatch
 {
   uint32_t start_time;
-  Stopwatch() : start_time(0){};
+  Stopwatch() : start_time(0) {};
   void start()
   {
     start_time = micros();
@@ -274,13 +273,13 @@ struct SDWriter
   SdFat *sd_;
   File *logData_;
   static constexpr size_t sd_write_buffer_size_ = 8192;
-  static constexpr size_t data_buffer_size_ = 8192;   // 4096 + 1024
+  static constexpr size_t data_buffer_size_ = 8192; // 4096 + 1024
   char sd_write_buffer_[sd_write_buffer_size_];
   char data_buffer_[data_buffer_size_];
   size_t current_data_size_;
   bool sd_card_not_exist_ = false;
-  
-  SDWriter() : sd_(NULL), logData_(NULL),current_data_size_(0)
+
+  SDWriter() : sd_(NULL), logData_(NULL), current_data_size_(0)
   {
     memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));
     memset(data_buffer_, 0, sizeof(data_buffer_));
@@ -288,38 +287,38 @@ struct SDWriter
 
   void setSDcard(SdFat *sd, File *logData)
   {
-    //全てのロックを取得
-    if(shared_data_semaphore == NULL)
+    // 全てのロックを取得
+    if (shared_data_semaphore == NULL)
     {
       shared_data_semaphore = xSemaphoreCreateMutex();
     }
-    while(true)
+    while (true)
     {
-      if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)    //    ------------------------------------- Lock Acuqire
+      if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
       {
         sd_ = sd;
         logData_ = logData;
-        xSemaphoreGive(shared_data_semaphore);                             //    ------------------------------------- Lock Release
+        xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
         break;
       }
     }
   }
-  
-  void addData(const char *data,const size_t& data_sizes)
+
+  void addData(const char *data, const size_t &data_sizes)
   {
-    if((data_sizes > data_buffer_size_) || (sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL) || sd_card_not_exist_)
+    if ((data_sizes > data_buffer_size_) || (sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL) || sd_card_not_exist_)
     {
       return;
     }
-    if((current_data_size_ + data_sizes) >= data_buffer_size_)
+    if ((current_data_size_ + data_sizes) >= data_buffer_size_)
     {
       return;
     }
-    if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)     //    ------------------------------------- Lock Acuqire
+    if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
     {
       strncpy(data_buffer_ + current_data_size_, data, data_sizes);
       current_data_size_ += data_sizes;
-      xSemaphoreGive(shared_data_semaphore);                               //    ------------------------------------- Lock Release
+      xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
       // Serial.printf("[[addData]] data_sizes = %d\n",data_sizes);
     }
     return;
@@ -327,24 +326,24 @@ struct SDWriter
 
   /**
    * @brief Acquire lock immediately and write data to buffer
-   * 
+   *
    * @param data const char* string data
    */
   void println(const char *data)
   {
-    if((sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL))
+    if ((sd_ == NULL) || (logData_ == NULL) || (shared_data_semaphore == NULL))
     {
       return;
     }
-    if((current_data_size_ + strlen(data)) >= data_buffer_size_)
+    if ((current_data_size_ + strlen(data)) >= data_buffer_size_)
     {
       return;
     }
-    if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)      //    ------------------------------------- Lock Acuqire
+    if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
     {
       strncpy(data_buffer_ + current_data_size_, data, strlen(data));
       current_data_size_ += strlen(data);
-      xSemaphoreGive(shared_data_semaphore);                               //    ------------------------------------- Lock Release
+      xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
     }
     return;
   }
@@ -358,20 +357,20 @@ struct SDWriter
    */
   bool checkSDCardAvailable()
   {
-    if(sd_ == NULL && logData_ == NULL)
+    if (sd_ == NULL && logData_ == NULL)
     {
-      initializeSDcard();   //SDカードが一番最初にセットアップされていない時
+      initializeSDcard(); // SDカードが一番最初にセットアップされていない時
       sd_card_not_exist_ = true;
       return !sd_card_not_exist_;
     }
-    if(!sd_->exists(filename_for_sdcard_exists))
+    if (!sd_->exists(filename_for_sdcard_exists))
     {
       sd_card_not_exist_ = true;
-      if(sd_card_not_exist_)  //SDカードが無い状態 -> ある状態に変わった時
+      if (sd_card_not_exist_) // SDカードが無い状態 -> ある状態に変わった時
       {
         Serial.println("Start reconnecting SD card...");
-        sd_->end();           //SDカードを終了
-        initializeSDcard();   //SDカードを再度セットアップ
+        sd_->end();         // SDカードを終了
+        initializeSDcard(); // SDカードを再度セットアップ
         Serial.println("SD card is reconnected");
         sd_card_not_exist_ = false;
       }
@@ -382,7 +381,7 @@ struct SDWriter
 
   /**
    * @brief Check if the SD card is available.
-   * 
+   *
    * @return true sd card is available.
    * @return false sd card is not available.
    * @note This function only checks the flag.If you want to check the SD card, use checkSDCardAvailable().
@@ -391,37 +390,37 @@ struct SDWriter
   {
     return !sd_card_not_exist_;
   }
-  
+
   /**
-   * @brief 
-   * @return true Flush was executed. 
+   * @brief
+   * @return true Flush was executed.
    * @return false Flush was not executed.
    */
   bool flush()
   {
     // セマフォを取る
     memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));
-    if(xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE)      //    ------------------------------------- Lock Acuqire
+    if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
     {
-      if(!checkSDCardAvailable())
+      if (!checkSDCardAvailable())
       {
         Serial.println("SD card is not available");
-        xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
+        xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
         return false;
       }
-      if(current_data_size_ < (sd_write_buffer_size_ - 500))                //あまり小さいサイズの時は書き込まない
+      if (current_data_size_ < (sd_write_buffer_size_ - 500)) // あまり小さいサイズの時は書き込まない
       {
-        xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
+        xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
         return false;
       }
-      memcpy(sd_write_buffer_, data_buffer_, current_data_size_);         // データを書き込み用バッファにコピー
+      memcpy(sd_write_buffer_, data_buffer_, current_data_size_); // データを書き込み用バッファにコピー
       const size_t write_size = current_data_size_;
       current_data_size_ = 0;
-      memset(data_buffer_, 0, sizeof(data_buffer_));                      //データバッファをクリア
-      xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
-      logData_->write(sd_write_buffer_, write_size);                      //書き込み
-      memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));              //書き込み用バッファをクリア
-      logData_->flush();                                                  //フラッシュ
+      memset(data_buffer_, 0, sizeof(data_buffer_));         // データバッファをクリア
+      xSemaphoreGive(shared_data_semaphore);                 //    ------------------------------------- Lock Release
+      logData_->write(sd_write_buffer_, write_size);         // 書き込み
+      memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_)); // 書き込み用バッファをクリア
+      logData_->flush();                                     // フラッシュ
       return true;
     }
     return false;
@@ -435,20 +434,20 @@ void sdWriterTask(void *pvParameters)
   Serial.println("SDWriterTask Start");
   while (true)
   {
-    if(shared_data_semaphore != NULL)
+    if (shared_data_semaphore != NULL)
     {
-      if(sd_writer.flush())
+      if (sd_writer.flush())
       {
-        vTaskDelay(10 / portTICK_PERIOD_MS); //10msec毎にチェック
+        vTaskDelay(10 / portTICK_PERIOD_MS); // 10msec毎にチェック
       }
       else
       {
-        vTaskDelay(5 / portTICK_PERIOD_MS); //5msec待つ
+        vTaskDelay(5 / portTICK_PERIOD_MS); // 5msec待つ
       }
     }
     else
     {
-      vTaskDelay(100 / portTICK_PERIOD_MS); 
+      vTaskDelay(100 / portTICK_PERIOD_MS);
     }
   }
 }
@@ -457,10 +456,10 @@ void sdWriterTask(void *pvParameters)
  * @brief Set the Up SD Write Task object.
  *        This must be called last in setup() function.
  */
-void setUpSDWriteTask() 
+void setUpSDWriteTask()
 {
   shared_data_semaphore = xSemaphoreCreateMutex();
-  xTaskCreatePinnedToCore(sdWriterTask, "sdWriterTask", 4096, NULL, 1, NULL, 0);  // core 0 is another core of the loop()
+  xTaskCreatePinnedToCore(sdWriterTask, "sdWriterTask", 4096, NULL, 1, NULL, 0); // core 0 is another core of the loop()
 }
 
 // ----------------------- ---------------------------------
@@ -485,7 +484,7 @@ void I2cScanner()
 
 struct alignas(4) Ina226SensorData
 {
-  uint8_t padding[3];     //いい感じにパディングする
+  uint8_t padding[3]; // いい感じにパディングする
   uint8_t address_;
   float voltage_;
   float current_;
@@ -499,15 +498,15 @@ struct Ina226MeasurementData
     clearData();
   }
 
-  std::array<Ina226SensorData,INA226_MAX_NUM> measurement_data_;
+  std::array<Ina226SensorData, INA226_MAX_NUM> measurement_data_;
   void clearData()
   {
-    measurement_data_.fill({0,0,0});
+    measurement_data_.fill({0, 0, 0});
   }
 
   void setData(const uint8_t &address, const float &voltage, const float &current)
   {
-    if(address > upperLimit_Address)
+    if (address > upperLimit_Address)
     {
       return;
     }
@@ -520,9 +519,9 @@ struct Ina226MeasurementData
   void writeDataToBuff(uint8_t *txData)
   {
     size_t packetIndex = 0;
-    for (const auto& data: measurement_data_)
+    for (const auto &data : measurement_data_)
     {
-      if(data.address_ == 0)
+      if (data.address_ == 0)
       {
         // packetIndex += Ina226SensorData::byte_size;
         continue;
@@ -532,12 +531,12 @@ struct Ina226MeasurementData
     }
   }
 
-  float getCurrentData(const uint8_t& target_address)
+  float getCurrentData(const uint8_t &target_address)
   {
     return measurement_data_[target_address - lowLimit_Address].current_;
   }
 
-  float getVoltageData(const uint8_t& target_address)
+  float getVoltageData(const uint8_t &target_address)
   {
     return measurement_data_[target_address - lowLimit_Address].voltage_;
   }
@@ -547,7 +546,7 @@ std::vector<INA226> INA;
 std::vector<float> rxFloatData;
 
 std::array<INA226BiasData, INA226_MAX_NUM> ina226_all_bias_data;
-std::unordered_map<uint8_t,INA226BiasData> ina226_detected_bias_data; //アドレスをハッシュとした連想配列
+std::unordered_map<uint8_t, INA226BiasData> ina226_detected_bias_data; // アドレスをハッシュとした連想配列
 
 Ina226MeasurementData measured_data;
 
@@ -569,15 +568,15 @@ uint8_tToUint16_t milliSeconds;
 void setupINA226s()
 {
   INA.clear();
-  for (const auto&address : readable_Addresses) //setは狭義の弱順序に従うので、順番に来てくれる
+  for (const auto &address : readable_Addresses) // setは狭義の弱順序に従うので、順番に来てくれる
   {
     INA.emplace_back(address);
 
     if (INA.back().begin())
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
-      INA.back().setShuntVoltageConversionTime(4); 
-      INA.back().setAverage(2);  // センサ値のsample数を決定する ここでのsample数は16
+      INA.back().setShuntVoltageConversionTime(4);
+      INA.back().setAverage(2); // センサ値のsample数を決定する ここでのsample数は16
     }
   }
 }
@@ -586,7 +585,7 @@ void setup()
 {
 #if DEBUG
   initializeSerial(serialBaudrate);
-#endif //DEBUG
+#endif // DEBUG
   initializeSerial1(serial1Baudrate);
   initializeSDcard();
 
@@ -611,20 +610,20 @@ void loop()
     txData.clear();
     // stopwatch.start();
     digitalWrite(txdenPin, LOW);
-    for (auto& ina_sensor : INA)
+    for (auto &ina_sensor : INA)
     {
       if (ina_sensor.begin())
       {
         //! is Connected
         const uint8_t target_address = ina_sensor.getAddress();
-        if(ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) //バイアスが設定されていない時
+        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) // バイアスが設定されていない時
         {
           measured_data.setData(target_address, ina_sensor.getBusVoltage(), ina_sensor.getCurrent_mA());
         }
         else
         {
           float current_mA = ina_sensor.getCurrent_mA();
-          //float voltage_V = ina_sensor.getBusVoltage();
+          // float voltage_V = ina_sensor.getBusVoltage();
           measured_data.setData(target_address, ina_sensor.getBusVoltage() + ina226_detected_bias_data[target_address].getVoltage(), current_mA + (ina226_detected_bias_data[target_address].getCurrent() * (current_mA / 1000.0f)));
           // Serial.printf("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
@@ -635,7 +634,7 @@ void loop()
     {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
       uint8_t tx_errorStatus = 0b00000000;
-      if(is_sdcard_error == true)
+      if (is_sdcard_error == true)
       {
         tx_errorStatus |= sdcard_errorStatus;
       }
@@ -651,7 +650,6 @@ void loop()
         size_t rxPacket_length = rxPacket_forward[headerPacket_length + 1];
         uint8_t rxCommand = rxPacket_forward[headerPacket_length + 2];
         uint8_t rxOption = rxPacket_forward[headerPacket_length + 3];
-
 
         //! make rxPaket
         uint8_t rxPacket[rxPacket_length] = {};
@@ -691,7 +689,7 @@ void loop()
         txPacket[packetIndex++] = id;
         txPacket[packetIndex++] = (uint8_t)txPacket_length;
         txPacket[packetIndex++] = rxCommand & return_command_mask; //! command
-        txPacket[packetIndex++] = tx_errorStatus; //! error
+        txPacket[packetIndex++] = tx_errorStatus;                  //! error
 
         //! add txData to txPacket
         if (!txData.empty())
@@ -741,7 +739,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
      * @brief:
      * @return:
      */
-    //float cardSize =sd.card()->sectorCount() * 0.512;
+    // float cardSize =sd.card()->sectorCount() * 0.512;
     uint32_t free = sd.vol()->freeClusterCount() * sd.vol()->sectorsPerCluster() * 0.512;
     uint8_tToUint32_t freeSize;
     freeSize.uint32_tData = free;
@@ -766,7 +764,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
     txData_length = detected_ina_num;
     txData.resize(txData_length);
     size_t tmp_loop_index = 0;
-    for (const auto&address : readable_Addresses)
+    for (const auto &address : readable_Addresses)
     {
       txData.at(tmp_loop_index) = address;
       tmp_loop_index++;
@@ -825,13 +823,13 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       // Serial.printf("Address: %x, Voltage: %f, Current: %f\n", address, ina226_all_bias_data[ina_num].getVoltage(), ina226_all_bias_data[ina_num].getCurrent());
     }
 
-    for (const auto& address :readable_Addresses)
+    for (const auto &address : readable_Addresses)
     {
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
         if (address == ina226_all_bias_data[j].getAddress())
         {
-          ina226_detected_bias_data[address].setBiasData(address,ina226_all_bias_data[j].getVoltage(),ina226_all_bias_data[j].getCurrent());
+          ina226_detected_bias_data[address].setBiasData(address, ina226_all_bias_data[j].getVoltage(), ina226_all_bias_data[j].getCurrent());
           // Serial.printf("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(),ina226_detected_bias_data[address].getVoltage(),ina226_detected_bias_data[address].getCurrent());
           break;
         }
@@ -933,14 +931,14 @@ void initializeSDcard()
     }
     fileNumber++; // 次の番号へ
   }
-  while(true)
+  while (true)
   {
-    if(sd.exists(filename_for_sdcard_exists))
+    if (sd.exists(filename_for_sdcard_exists))
     {
       break;
     }
     File tmp = sd.open(filename_for_sdcard_exists, FILE_WRITE);
-    if(tmp)
+    if (tmp)
     {
       tmp.close();
       break;
@@ -965,32 +963,32 @@ void WriteSDcard()
       is_sdcard_write = true;
     }
   }
-  if(unix_time_data.length() != 0)
+  if (unix_time_data.length() != 0)
   {
     sd_writer.println(unix_time_data.c_str());
   }
 
   static char headerStr[32];
   memset(headerStr, 0, sizeof(headerStr));
-  int32_t header_write_size = snprintf(headerStr, sizeof(headerStr), ",%d,%d,",time_data,is_send_data);
-  if(header_write_size > 0)
+  int32_t header_write_size = snprintf(headerStr, sizeof(headerStr), ",%d,%d,", time_data, is_send_data);
+  if (header_write_size > 0)
   {
     cached_size += header_write_size;
     sd_writer.addData(headerStr, header_write_size);
   }
 
   is_send_data = false;
-  
+
   static char dataStr[256];
   memset(dataStr, 0, sizeof(dataStr));
 
   int32_t wrote_size = 0;
   for (uint8_t target_address = lowLimit_Address; target_address <= upperLimit_Address; target_address++)
   {
-    if(readable_Addresses.find(target_address) != readable_Addresses.end())
+    if (readable_Addresses.find(target_address) != readable_Addresses.end())
     {
-      wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "%4.2f,%5.0f,", target_address, 
-                            measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
+      wrote_size += snprintf(dataStr + wrote_size, sizeof(dataStr), "%4.2f,%5.0f,", target_address,
+                             measured_data.getVoltageData(target_address), measured_data.getCurrentData(target_address));
     }
     else
     {
@@ -1001,7 +999,7 @@ void WriteSDcard()
   dataStr[wrote_size] = '\n';
   ++wrote_size;
   cached_size += wrote_size;
-  sd_writer.addData(dataStr,wrote_size);
+  sd_writer.addData(dataStr, wrote_size);
 }
 
 void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tToUint16_t &milliSeconds)
