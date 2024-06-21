@@ -392,6 +392,11 @@ struct SDWriter
     return !sd_card_not_exist_;
   }
   
+  /**
+   * @brief 
+   * @return true Flush was executed. 
+   * @return false Flush was not executed.
+   */
   bool flush()
   {
     // セマフォを取る
@@ -404,7 +409,7 @@ struct SDWriter
         xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
         return false;
       }
-      if(current_data_size_ < (sd_write_buffer_size_ - 500)) //あまり小さいサイズの時は書き込まない
+      if(current_data_size_ < (sd_write_buffer_size_ - 500))                //あまり小さいサイズの時は書き込まない
       {
         xSemaphoreGive(shared_data_semaphore);                              //    ------------------------------------- Lock Release
         return false;
@@ -438,7 +443,7 @@ void sdWriterTask(void *pvParameters)
       }
       else
       {
-        vTaskDelay(3 / portTICK_PERIOD_MS); //3msec待つ
+        vTaskDelay(5 / portTICK_PERIOD_MS); //5msec待つ
       }
     }
     else
