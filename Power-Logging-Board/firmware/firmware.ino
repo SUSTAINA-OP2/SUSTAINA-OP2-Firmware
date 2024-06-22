@@ -296,10 +296,6 @@ struct SDWriter
     {
       if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
       {
-        if(sd_ != NULL)
-        {
-          sd_->end();
-        }
         sd_ = sd;
         logData_ = logData;
         xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
@@ -323,7 +319,6 @@ struct SDWriter
       strncpy(data_buffer_ + current_data_size_, data, data_sizes);
       current_data_size_ += data_sizes;
       xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
-      // Serial.printf("[[addData]] data_sizes = %d\n",data_sizes);
     }
     return;
   }
@@ -901,6 +896,10 @@ void serial1SendData(uint8_t *txPacket, const size_t &packet_num)
 
 void initializeSDcard()
 {
+  // SDカードの終了(開始されている場合があるため)
+  sd.end();
+  //logDataはデストラクト時にクローズされないので、そのまま代入して良い
+
   // SDカードのセットアップ
   Serial.println(F("Initializing SD card..."));
   if (!sd.begin(SD_CONFIG))
@@ -913,9 +912,8 @@ void initializeSDcard()
 
   int fileNumber = 1;   // ファイル番号の開始
   char fileName[12];    // ファイル名を格納する配列
-  bool created = false; // ファイル作成フラグ
 
-  while (!created)
+  while (true)
   {
     sprintf(fileName, "%d.csv", fileNumber); // ファイル名を大文字で生成
     if (!sd.exists(fileName))
@@ -926,8 +924,8 @@ void initializeSDcard()
       {
         Serial.print(fileName);
         Serial.println(" を作成しました。");
-        created = true; // ファイルを作成したのでフラグを立てる
         logData.println("Jetson_Time, Arduino_msec, Send_Data, addr40_Voltage, addr40_Current, addr41_Voltage, addr41_Current, addr42_Voltage, addr42_Current, addr43_Voltage, addr43_Current,addr44_Voltage, addr44_Current, addr45_Voltage, addr45_Current, addr46_Voltage, addr46_Current, addr47_Voltage, addr47_Current, addr48_Voltage, addr48_Current, addr49_Voltage, addr49_Current, addr4a_Voltage, addr4a_Current, addr4b_Voltage, addr4b_Current, addr4c_Voltage, addr4c_Current, addr4d_Voltage, addr4d_Current, addr4e_Voltage, addr4e_Current, addr4f_Voltage, addr4f_Current");
+        break;
       }
       else
       {
