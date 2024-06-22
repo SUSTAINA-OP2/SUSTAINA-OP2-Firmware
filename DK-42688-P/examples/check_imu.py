@@ -6,10 +6,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QLineEdit, QLa
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QFont
-# import matplotlib.pyplot as plt # グラフ作成のため
 
 IMU_DATA_BYTE_SIZE = 44
-IMU_PACKET_BYTE_SIZE = IMU_DATA_BYTE_SIZE * 1 + 2 + 3 + 2
+IMU_PACKET_BYTE_SIZE = IMU_DATA_BYTE_SIZE * 1 + 2 + 4 + 2
 
 
 class ImuData:
@@ -92,10 +91,7 @@ class ImuCommunicater:
             print("[Failed to read]. Data header is not correct. Header: {}".format(read_data[0:2]))
             return None
         return_data_size = 1
-        # if return_data_size != 10:
-        #     print("return_data_size = {} is not correct".format(return_data_size))
-        self.parseError(read_data[3:4])
-        data_list = parseImuData(read_data[5:-2], return_data_size)
+        data_list = parseImuData(read_data[6:-2], return_data_size)
         data_str = ""
         if data_list is not None:
             for data in data_list:
@@ -215,14 +211,6 @@ class MainWindow(QMainWindow):
         self.stop_button.clicked.connect(self.stopUpdatingData)
 
         self.update_pause_flag = False
-        # self.figure,ax = plt.subplots(figsize=(12.8, 7.2))
-        # ax.set_xlabel('Time')
-        # ax.set_ylabel('Data')
-        # ax.set_title('XYZ Data')
-        # self.x_data = []
-        # self.y_data = []
-        # self.z_data = []
-
         # シリアルポート
         if len(sys.argv) > 1 and sys.argv[1]:
             port = sys.argv[1]
@@ -259,29 +247,8 @@ class MainWindow(QMainWindow):
                 data_str += '\n{:04d} :: '.format(index)
             data_str += '{:02X}'.format(d) + ' '
             index += 1
-        # data_str = ' '.join([f'{byte:02X}' for byte in data[1]])
         formatted_data_str = data_str
-        # formatted_data_str = '\n'.join([f'{data_str[i:i+32]}' for i in range(0, len(data_str), 16)])
         self.bytes_text_edit.setText(formatted_data_str)
-
-        # self.graph_count += 1
-        # if self.graph_count % 1 == 0:
-        #     # Update graph
-        #     self.x_data += [data.acc_x for data in data[0]]
-        #     self.y_data += [data.acc_y for data in data[0]]
-        #     self.z_data += [data.acc_z for data in data[0]]
-        #     if len(self.x_data) > 100:
-        #         self.x_data = self.x_data[-100:]
-        #     if len(self.y_data) > 100:
-        #         self.y_data = self.y_data[-100:]
-        #     if len(self.z_data) > 100:
-        #         self.z_data = self.z_data[-100:]
-            
-        #     plt.plot(self.x_data, label='X')
-        #     plt.plot(self.y_data, label='Y')
-        #     plt.plot(self.z_data, label='Z')
-        #     plt.pause(0.004)  # Pause for a short time to update the graph
-        #     print("Graph updated")
 
 
 class Worker(QThread):
