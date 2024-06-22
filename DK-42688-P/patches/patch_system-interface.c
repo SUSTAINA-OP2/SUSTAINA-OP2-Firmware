@@ -9,11 +9,3 @@
  	uart_mngr_config.flow_ctrl = INV_UART_FLOW_CONTROL_NONE;
  	inv_uart_mngr_init(&uart_mngr_config);
  }
-@@ -195,6 +195,7 @@
- int akm_io_hal_init(void *serif)
- {
- 	(void)serif;
-+
- 
- 	inv_i2c_master_init();
- 	return 0;
