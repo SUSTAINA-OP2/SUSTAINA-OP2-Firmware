@@ -9,7 +9,7 @@ from PyQt5.QtGui import QFont
 # import matplotlib.pyplot as plt # グラフ作成のため
 
 IMU_DATA_BYTE_SIZE = 44
-IMU_PACKET_BYTE_SIZE = IMU_DATA_BYTE_SIZE * 10 + 2 + 3 + 2
+IMU_PACKET_BYTE_SIZE = IMU_DATA_BYTE_SIZE * 1 + 2 + 3 + 2
 
 
 class ImuData:
@@ -91,9 +91,9 @@ class ImuCommunicater:
         if read_data[0] != 0xfe or read_data[1] != 0xfe:
             print("[Failed to read]. Data header is not correct. Header: {}".format(read_data[0:2]))
             return None
-        return_data_size = read_data[4]
-        if return_data_size != 10:
-            print("return_data_size = {} is not correct".format(return_data_size))
+        return_data_size = 1
+        # if return_data_size != 10:
+        #     print("return_data_size = {} is not correct".format(return_data_size))
         self.parseError(read_data[3:4])
         data_list = parseImuData(read_data[5:-2], return_data_size)
         data_str = ""
@@ -119,7 +119,7 @@ class ImuCommunicater:
         self.ser.close()
     
     def sendRequest(self):
-        return self.ser.write(b"K")
+        return self.ser.write(b"C")
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -239,7 +239,7 @@ class MainWindow(QMainWindow):
     def updateData(self, data):
         if self.update_pause_flag:
             return
-        d = data[0][-1]
+        d = data[0][0]
         self.line_edit_acc_x.setText(str(d.acc_x))
         self.line_edit_acc_y.setText(str(d.acc_y))
         self.line_edit_acc_z.setText(str(d.acc_z))
