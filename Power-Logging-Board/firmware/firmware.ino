@@ -410,13 +410,21 @@ void loop()
         const uint8_t target_address = ina_sensor.getAddress();
         if(ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) //バイアスが設定されていない時
         {
-          measured_data.setData(target_address, ina_sensor.getBusVoltage(), ina_sensor.getCurrent_mA());
+          INA226Error ec;
+          const float current_mA = ina_sensor.getCurrent_mA(ec);
+          if(ec) continue;        //If error occurs, skip this sensor
+          const float voltage_V = ina_sensor.getBusVoltage(ec);
+          if(ec) continue;        //If error occurs, skip this sensor
+          measured_data.setData(target_address, voltage_V, current_mA);
         }
         else
         {
-          float current_mA = ina_sensor.getCurrent_mA();
-          //float voltage_V = ina_sensor.getBusVoltage();
-          measured_data.setData(target_address, ina_sensor.getBusVoltage() + ina226_detected_bias_data[target_address].getVoltage(), current_mA + (ina226_detected_bias_data[target_address].getCurrent() * (current_mA / 1000.0f)));
+          INA226Error ec;
+          const float current_mA = ina_sensor.getCurrent_mA(ec);
+          if(ec) continue;        //If error occurs, skip this sensor
+          const float voltage_V = ina_sensor.getBusVoltage(ec);
+          if(ec) continue;        //If error occurs, skip this sensor
+          measured_data.setData(target_address, voltage_V + ina226_detected_bias_data[target_address].getVoltage(), current_mA + (ina226_detected_bias_data[target_address].getCurrent() * (current_mA / 1000.0f)));
           // Serial.printf("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
       }
