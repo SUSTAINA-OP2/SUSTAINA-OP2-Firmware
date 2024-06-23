@@ -287,7 +287,7 @@ void I2cScanner()
 
 struct alignas(4) Ina226SensorData
 {
-  uint8_t padding[3]; // いい感じにパディングする
+  uint8_t padding[3]; // For padding. Not used.
   uint8_t address_;
   float voltage_;
   float current_;
@@ -350,7 +350,7 @@ std::vector<INA226> INA;
 std::vector<float> rxFloatData;
 
 std::array<INA226BiasData, INA226_MAX_NUM> ina226_all_bias_data;
-std::unordered_map<uint8_t, INA226BiasData> ina226_detected_bias_data; // アドレスをハッシュとした連想配列
+std::unordered_map<uint8_t, INA226BiasData> ina226_detected_bias_data; // Hash : address, Data : INA226BiasData
 
 Ina226MeasurementData measured_data;
 
@@ -371,7 +371,7 @@ uint8_tToUint16_t milliSeconds;
 void setupINA226s()
 {
   INA.clear();
-  for (const auto &address : readable_Addresses) // setは狭義の弱順序に従うので、順番に来てくれる
+  for (const auto &address : readable_Addresses) // std::set follows a narrowly defined weak order, so it comes in order.
   {
     INA.emplace_back(address);
 
@@ -379,7 +379,7 @@ void setupINA226s()
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
       INA.back().setShuntVoltageConversionTime(4);
-      INA.back().setAverage(2); // センサ値のsample数を決定する ここでのsample数は16
+      INA.back().setAverage(2);                   // Determine the number of samples of the sensor value. Here the number of samples is 16.
     }
   }
 }
@@ -410,7 +410,6 @@ void loop()
     measured_data.clearData();
 
     txData.clear();
-    // stopwatch.start();
     digitalWrite(TXDEN_PIN, LOW);
     for (auto &ina_sensor : INA)
     {
@@ -425,13 +424,10 @@ void loop()
         else
         {
           float current_mA = ina_sensor.getCurrent_mA();
-          // float voltage_V = ina_sensor.getBusVoltage();
           measured_data.setData(target_address, ina_sensor.getBusVoltage() + ina226_detected_bias_data[target_address].getVoltage(), current_mA + (ina226_detected_bias_data[target_address].getCurrent() * (current_mA / 1000.0f)));
-          // Serial.printf("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
       }
     }
-    // stopwatch.printElapsedTime();
     if (Serial1.available() >= RX_PACKET_MIN_LENGTH)
     {
       uint8_t rxPacket_forward[RX_PACKET_FORWARD_LENGTH] = {};
@@ -707,28 +703,26 @@ void initializeSDcard()
   }
   is_sdcard_error = false;
 
-  int fileNumber = 1;   // ファイル番号の開始
-  char fileName[12];    // ファイル名を格納する配列
-  bool created = false; // ファイル作成フラグ
+  int fileNumber = 1;   // Starting file number
+  char fileName[12];    // Array containing the file name
+  bool created = false; // File creation flag
 
   while (!created)
   {
-    sprintf(fileName, "%d.csv", fileNumber); // ファイル名を大文字で生成
+    sprintf(fileName, "%d.csv", fileNumber); // Generate file names in uppercase.
     if (!sd.exists(fileName))
     {
-      // ファイルが存在しない場合、新しいファイルを作成
+      // If file does not exist, create a new file
       logData = sd.open(fileName, FILE_WRITE);
       if (logData)
       {
-        Serial.print(fileName);
-        Serial.println(" を作成しました。");
-        created = true; // ファイルを作成したのでフラグを立てる
+        Serial.printf("Create file --> %s\n", fileName);
+        created = true;
         logData.println("Jetson_Time, Arduino_msec, Send_Data, addr40_Voltage, addr40_Current, addr41_Voltage, addr41_Current, addr42_Voltage, addr42_Current, addr43_Voltage, addr43_Current,addr44_Voltage, addr44_Current, addr45_Voltage, addr45_Current, addr46_Voltage, addr46_Current, addr47_Voltage, addr47_Current, addr48_Voltage, addr48_Current, addr49_Voltage, addr49_Current, addr4a_Voltage, addr4a_Current, addr4b_Voltage, addr4b_Current, addr4c_Voltage, addr4c_Current, addr4d_Voltage, addr4d_Current, addr4e_Voltage, addr4e_Current, addr4f_Voltage, addr4f_Current");
       }
       else
       {
-        Serial.print(fileName);
-        Serial.println(" の作成に失敗しました。");
+        Serial.printf("Failed to create file --> %s\n", fileName);
       }
     }
     fileNumber++; // 次の番号へ
@@ -742,7 +736,6 @@ void WriteSDcard()
   time_data = millis();
   std::string unix_time_data;
   time_manager.timeUpdate();
-  // freq_calc.count();
   if (!is_sdcard_write)
   {
     unix_time_data = time_manager.getTime();
@@ -791,7 +784,6 @@ void WriteSDcard()
   if (cached_size > 4096) // 4KB以上キャッシュされたらフラッシュする
   {
     logData.flush();
-    // Serial.printf("Freq :: %f\n",freq_calc.getFreq(time_data));
     cached_size = 0;
   }
 }
@@ -801,7 +793,6 @@ void deserializeReceiveTimeData(const uint8_tToUint32_t &seconds, const uint8_tT
   time_t secondsData = seconds.uint32_tData;
   time_t milliSecondsData = milliSeconds.uint16_tData;
   time_manager.setTime(secondsData, milliSecondsData);
-  // Serial.printf("Time: %s.%03d\n",buf,milliSecondsData);
 }
 
 void software_reset()
