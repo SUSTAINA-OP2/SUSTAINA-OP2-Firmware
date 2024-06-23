@@ -12,6 +12,15 @@
 
 #define DEBUG 0
 
+#ifdef DEBUG
+  // Serial output for debugging PLB( = Power-Logging-Board). 
+  #define PLB_DEBUG_SERIAL_PRINTF(...) Serial.printf(__VA_ARGS__);
+  #define PLB_DEBUG_SERIAL_PRINTLN(...) Serial.println(__VA_ARGS__);
+#else //! DEBUG
+  #define PLB_DEBUG_SERIAL_PRINTF(...) ;
+  #define PLB_DEBUG_SERIAL_PRINTLN(...) ;
+#endif //! DEBUG
+
 /**
    setting by user
 */
@@ -264,7 +273,7 @@ struct Stopwatch
 
   void printElapsedTime()
   {
-    Serial.printf("Elapsed Time: %d[us]\n", getElapsedTime());
+    PLB_DEBUG_SERIAL_PRINTF("Elapsed Time: %d[us]\n", getElapsedTime());
   }
 };
 
@@ -617,7 +626,7 @@ void processCommand(const uint8_t &CMD, uint8_t *error, const uint8_t rxPacket[]
         current.uint8_tData[index] = rxPacket[i];
       }
       ina226_all_bias_data[ina_num].setBiasData(address, voltage.floatData, current.floatData);
-      // Serial.printf("Address: %x, Voltage: %f, Current: %f\n", address, ina226_all_bias_data[ina_num].getVoltage(), ina226_all_bias_data[ina_num].getCurrent());
+      PLB_DEBUG_SERIAL_PRINTF("Address: %x, Voltage: %f, Current: %f\n", address, ina226_all_bias_data[ina_num].getVoltage(), ina226_all_bias_data[ina_num].getCurrent());
     }
 
     for (const auto &address : readable_Addresses)
@@ -627,7 +636,7 @@ void processCommand(const uint8_t &CMD, uint8_t *error, const uint8_t rxPacket[]
         if (address == ina226_all_bias_data[j].getAddress())
         {
           ina226_detected_bias_data[address].setBiasData(address, ina226_all_bias_data[j].getVoltage(), ina226_all_bias_data[j].getCurrent());
-          // Serial.printf("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(),ina226_detected_bias_data[address].getVoltage(),ina226_detected_bias_data[address].getCurrent());
+          PLB_DEBUG_SERIAL_PRINTF("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(),ina226_detected_bias_data[address].getVoltage(),ina226_detected_bias_data[address].getCurrent());
           break;
         }
       }
@@ -694,10 +703,10 @@ void RS485SerialSendData(uint8_t *txPacket, const size_t &LENGTH)
 
 void initializeSDcard()
 {
-  Serial.println(F("Initializing SD card..."));
+  PLB_DEBUG_SERIAL_PRINTLN(F("Initializing SD card..."));
   if (!sd.begin(SD_CONFIG))
   {
-    Serial.println(F("Failed to initialize SD card"));
+    PLB_DEBUG_SERIAL_PRINTLN(F("Failed to initialize SD card"));
     is_sdcard_error = true;
     return;
   }
@@ -716,13 +725,13 @@ void initializeSDcard()
       logData = sd.open(fileName, FILE_WRITE);
       if (logData)
       {
-        Serial.printf("Create file --> %s\n", fileName);
+        PLB_DEBUG_SERIAL_PRINTF("Create file --> %s\n", fileName);
         created = true;
         logData.println("Jetson_Time, Arduino_msec, Send_Data, addr40_Voltage, addr40_Current, addr41_Voltage, addr41_Current, addr42_Voltage, addr42_Current, addr43_Voltage, addr43_Current,addr44_Voltage, addr44_Current, addr45_Voltage, addr45_Current, addr46_Voltage, addr46_Current, addr47_Voltage, addr47_Current, addr48_Voltage, addr48_Current, addr49_Voltage, addr49_Current, addr4a_Voltage, addr4a_Current, addr4b_Voltage, addr4b_Current, addr4c_Voltage, addr4c_Current, addr4d_Voltage, addr4d_Current, addr4e_Voltage, addr4e_Current, addr4f_Voltage, addr4f_Current");
       }
       else
       {
-        Serial.printf("Failed to create file --> %s\n", fileName);
+        PLB_DEBUG_SERIAL_PRINTF("Failed to create file --> %s\n", fileName);
       }
     }
     fileNumber++;
