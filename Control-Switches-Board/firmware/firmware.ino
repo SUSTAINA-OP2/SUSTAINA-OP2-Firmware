@@ -60,26 +60,26 @@ enum class ButtonStateEnum
 
 struct ButtonState
 {
-  ButtonStateEnum last_button_state;
-  volatile uint8_t red_pushed_count = 0;
-  volatile uint8_t green_pushed_count = 0;
-  uint8_t red_state_reset_count = 0;
+  ButtonStateEnum last_button_state_;
+  volatile uint8_t red_pushed_count_ = 0;
+  volatile uint8_t green_pushed_count_ = 0;
+  uint8_t red_state_reset_count_ = 0;
   // ボタン状態を読み出す。これはメインループで一回呼ばれる事を想定している。
   ButtonStateEnum readButtonState()
   {
     ButtonStateEnum return_state;
-    if (red_pushed_count > 2)
+    if (red_pushed_count_ > 2)
     {
       return_state = ButtonStateEnum::RED_PUSHED_OVER_3TIMES;
-      red_state_reset_count = 0;
-      red_pushed_count = 0;
-      green_pushed_count = 0;
+      red_state_reset_count_ = 0;
+      red_pushed_count_ = 0;
+      green_pushed_count_ = 0;
     }
-    else if (red_pushed_count > 0)
+    else if (red_pushed_count_ > 0)
     {
       return_state = ButtonStateEnum::RED_PUSHED;
     }
-    else if (green_pushed_count > 0)
+    else if (green_pushed_count_ > 0)
     {
       return_state = ButtonStateEnum::GREEN_PUSHED;
     }
@@ -87,23 +87,23 @@ struct ButtonState
     {
       return_state = ButtonStateEnum::NOT_PUSHED;
     }
-    green_pushed_count = 0;
-    red_state_reset_count++;
-    if (red_state_reset_count > PUSHCOUNT_RESET_THRESHOLD)
+    green_pushed_count_ = 0;
+    red_state_reset_count_++;
+    if (red_state_reset_count_ > PUSHCOUNT_RESET_THRESHOLD)
     {
-      red_pushed_count = 0;
-      red_state_reset_count = 0;
+      red_pushed_count_ = 0;
+      red_state_reset_count_ = 0;
     }
     if (return_state != ButtonStateEnum::NOT_PUSHED)
     {
-      if ((last_button_state == ButtonStateEnum::RED_PUSHED_OVER_3TIMES) && (return_state == ButtonStateEnum::RED_PUSHED))
+      if ((last_button_state_ == ButtonStateEnum::RED_PUSHED_OVER_3TIMES) && (return_state == ButtonStateEnum::RED_PUSHED))
       {
         // 何もしない
-        last_button_state = last_button_state;
+        last_button_state_ = last_button_state_;
       }
       else
       {
-        last_button_state = return_state;
+        last_button_state_ = return_state;
       }
     }
     return return_state;
@@ -112,8 +112,8 @@ struct ButtonState
   // メインループの周期でボタン状態を更新する
   ButtonStateEnum lastButtonState()
   {
-    ButtonStateEnum tmp = last_button_state;
-    last_button_state = ButtonStateEnum::NOT_PUSHED;
+    ButtonStateEnum tmp = last_button_state_;
+    last_button_state_ = ButtonStateEnum::NOT_PUSHED;
     return tmp;
   }
 };
@@ -148,7 +148,7 @@ void red_pushed(void)
   unsigned long now = millis();
   if (now - red_prev_timer > 20)
   {
-    button_state.red_pushed_count++;
+    button_state.red_pushed_count_++;
     red_prev_timer = now;
   }
 }
@@ -159,7 +159,7 @@ void green_pushed(void)
   unsigned long now = millis();
   if (now - green_prev_timer > 20)
   {
-    button_state.green_pushed_count++;
+    button_state.green_pushed_count_++;
     green_prev_timer = now;
   }
 }
