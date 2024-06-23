@@ -118,7 +118,12 @@ struct ButtonState
   }
 };
 
-static ButtonState button_state;
+
+ButtonState& getButtonState()
+{
+  static ButtonState button_state;
+  return button_state;
+}
 
 void setLedState(const uint16_t target_state)
 {
@@ -148,7 +153,7 @@ void red_pushed(void)
   unsigned long now = millis();
   if (now - red_prev_timer > 20)
   {
-    button_state.red_pushed_count_++;
+    getButtonState().red_pushed_count_++;
     red_prev_timer = now;
   }
 }
@@ -159,7 +164,7 @@ void green_pushed(void)
   unsigned long now = millis();
   if (now - green_prev_timer > 20)
   {
-    button_state.green_pushed_count_++;
+    getButtonState().green_pushed_count_++;
     green_prev_timer = now;
   }
 }
@@ -189,10 +194,10 @@ void setup()
 
 void loop()
 {
-  digitalWrite(TXDEN_PIN, LOW);    // 受信可能にする
-  delay(DELAYVAL_MS - 2); // 他で送れる事があるので、少し早くする
-  auto current_state = button_state.readButtonState();
-  if (Serial1.available() > 1) // 2byte以上来たら読み込む
+  digitalWrite(TXDEN_PIN, LOW);    // enable receiving
+  delay(DELAYVAL_MS - 2);          // 他で送れる事があるので、少し早くする
+  auto current_state = getButtonState().readButtonState();
+  if (Serial1.available() > 1)     // 2byte以上来たら読み込む
   {
     uint16_t receive_data = 0;
     uint8_t read_count = 0;
@@ -207,31 +212,11 @@ void loop()
     }
     if ((receive_data & REQUEST_BUTTON_STATE) > 0)
     {
-      auto last_state = button_state.lastButtonState();
+      auto last_state = getButtonState().lastButtonState();
       char send_buf = static_cast<char>(last_state);
-      digitalWrite(TXDEN_PIN, HIGH); // 送信可能にする
+      digitalWrite(TXDEN_PIN, HIGH);    // enable sending
       Serial1.write(send_buf);
       Serial1.flush();
-      // debug用出力を要求された時
-      // if ((receive_data & (1 << 14)) != 0)
-      // {
-      //   if (last_state == ButtonStateEnum::RED_PUSHED_OVER_3TIMES)
-      //   {
-      //     Serial.write("Red pushed over 3 times");
-      //   }
-      //   else if (last_state == ButtonStateEnum::RED_PUSHED)
-      //   {
-      //     Serial.write("Red pushed");
-      //   }
-      //   else if (last_state == ButtonStateEnum::GREEN_PUSHED)
-      //   {
-      //     Serial.write("Green pushed");
-      //   }
-      //   else
-      //   {
-      //     Serial.write("Not pushed");
-      //   }
-      // }
     }
     setLedState(receive_data);
   }
