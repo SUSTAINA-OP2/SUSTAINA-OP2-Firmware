@@ -79,7 +79,12 @@ struct INA226Error
     READ_REGISTER_ERROR = 1,
   };
   uint8_t error_code_;  //  error code
-}
+
+  operator bool() const {
+    return error_code_ != NONE;
+  }
+};
+
 
 class INA226
 {
