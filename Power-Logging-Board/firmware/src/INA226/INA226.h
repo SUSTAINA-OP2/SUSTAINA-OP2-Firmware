@@ -108,15 +108,15 @@ public:
 
 
   //  Scale helpers milli range
-  float    getBusVoltage_mV()   { return getBusVoltage()   * 1e3; };
-  float    getShuntVoltage_mV() { return getShuntVoltage() * 1e3; };
-  float    getCurrent_mA()      { return getCurrent()      * 1e3; };
-  float    getPower_mW()        { return getPower()        * 1e3; };
+  float    getBusVoltage_mV(INA226Error& error_code)   { return getBusVoltage(error_code)   * 1e3; };
+  float    getShuntVoltage_mV(INA226Error& error_code) { return getShuntVoltage(error_code) * 1e3; };
+  float    getCurrent_mA(INA226Error& error_code)      { return getCurrent(error_code)      * 1e3; };
+  float    getPower_mW(INA226Error& error_code)        { return getPower(error_code)        * 1e3; };
   //  Scale helpers micro range
-  float    getBusVoltage_uV()   { return getBusVoltage()   * 1e6; };
-  float    getShuntVoltage_uV() { return getShuntVoltage() * 1e6; };
-  float    getCurrent_uA()      { return getCurrent()      * 1e6; };
-  float    getPower_uW()        { return getPower()        * 1e6; };
+  float    getBusVoltage_uV(INA226Error& error_code)   { return getBusVoltage(error_code)   * 1e6; };
+  float    getShuntVoltage_uV(INA226Error& error_code) { return getShuntVoltage(error_code) * 1e6; };
+  float    getCurrent_uA(INA226Error& error_code)      { return getCurrent(error_code)      * 1e6; };
+  float    getPower_uW(INA226Error& error_code)        { return getPower(error_code)        * 1e6; };
 
 
   //  Configuration
