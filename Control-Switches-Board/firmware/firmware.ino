@@ -1,4 +1,4 @@
-#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel/Adafruit_NeoPixel.h>
 
 // PIN宣言
 constexpr byte NEOPIXEL_LED_PIN = 6; // これだけはesp32の方のピン番号
