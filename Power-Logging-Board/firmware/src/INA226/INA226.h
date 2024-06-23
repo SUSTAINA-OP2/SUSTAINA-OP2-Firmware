@@ -71,6 +71,15 @@ enum ina226_timing_enum {
     INA226_8300_us = 7
 };
 
+struct INA226Error
+{
+  enum INA226ErrorEnum
+  {
+    NONE = 0,
+    READ_REGISTER_ERROR = 1,
+  };
+  uint8_t error_code_;  //  error code
+}
 
 class INA226
 {
@@ -84,10 +93,10 @@ public:
 
 
   //  Core functions
-  float    getBusVoltage();       //  Volt
-  float    getShuntVoltage();     //  Volt
-  float    getCurrent();          //  Ampere
-  float    getPower();            //  Watt
+  float    getBusVoltage(INA226Error& error_code);       //  Volt
+  float    getShuntVoltage(INA226Error& error_code);     //  Volt
+  float    getCurrent(INA226Error& error_code);          //  Ampere
+  float    getPower(INA226Error& error_code);            //  Watt
   //  See #35
   bool     isConversionReady();   //  conversion ready flag is set.
   bool     waitConversionReady(uint32_t timeout = INA226_MAX_WAIT_MS);
