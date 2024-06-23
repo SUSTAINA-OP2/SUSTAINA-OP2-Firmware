@@ -1,7 +1,4 @@
 #include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-#include <avr/power.h>
-#endif
 
 // PIN宣言
 constexpr byte NEOPIXEL_LED_PIN = 6; // これだけはesp32の方のピン番号
@@ -169,9 +166,6 @@ void green_pushed(void)
 
 void setup()
 {
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
-  clock_prescale_set(clock_div_1);
-#endif
   pinMode(GREEN_SWITCH_PIN, INPUT_PULLUP);
   pinMode(RED_SWITCH_PIN, INPUT_PULLUP);
   pinMode(BOARD_LED_RED, OUTPUT);
