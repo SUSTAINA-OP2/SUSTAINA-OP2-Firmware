@@ -417,7 +417,7 @@ void loop()
       {
         //! is Connected
         const uint8_t target_address = ina_sensor.getAddress();
-        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) // バイアスが設定されていない時
+        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end())          // When no bias is set.
         {
           measured_data.setData(target_address, ina_sensor.getBusVoltage(), ina_sensor.getCurrent_mA());
         }
@@ -725,7 +725,7 @@ void initializeSDcard()
         Serial.printf("Failed to create file --> %s\n", fileName);
       }
     }
-    fileNumber++; // 次の番号へ
+    fileNumber++;
   }
 }
 
@@ -781,7 +781,7 @@ void WriteSDcard()
   ++wrote_size;
   cached_size += wrote_size;
   logData.write(dataStr, wrote_size);
-  if (cached_size > 4096) // 4KB以上キャッシュされたらフラッシュする
+  if (cached_size > 4096) // Flush if more than 4 KB is cached.
   {
     logData.flush();
     cached_size = 0;
