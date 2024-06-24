@@ -67,10 +67,10 @@ uint8_t INA226::getAddress()
 
 void does_readRegisterError(INA226Error& error_code,const uint16_t& value) {
   if (value == 0xFFFF) {
-    error_code = INA226Error::INA226_ERR_READ_FAILED;
+    error_code.error_code_ = INA226Error::INA226ErrorEnum::READ_REGISTER_ERROR;
     return;
   }
-  error_code = INA226Error::INA226_ERR_NONE;
+  error_code.error_code_ = INA226Error::INA226ErrorEnum::NONE;
   return;
 }
 
