@@ -53,25 +53,25 @@ void MainWindow::setup()
     default_background_color_ = ui->target_foot_comboBox->palette().color(QWidget::backgroundRole());
     qDebug() << default_background_color_.name();
 
-    right_sensor_position_value_list_.append(ui->right_foot_left_front_value_label);
     right_sensor_position_value_list_.append(ui->right_foot_right_front_value_label);
-    right_sensor_position_value_list_.append(ui->right_foot_left_rear_value_label);
     right_sensor_position_value_list_.append(ui->right_foot_right_rear_value_label);
+    right_sensor_position_value_list_.append(ui->right_foot_left_rear_value_label);
+    right_sensor_position_value_list_.append(ui->right_foot_left_front_value_label);
 
-    left_sensor_position_value_list_.append(ui->left_foot_left_front_value_label);
     left_sensor_position_value_list_.append(ui->left_foot_right_front_value_label);
-    left_sensor_position_value_list_.append(ui->left_foot_left_rear_value_label);
     left_sensor_position_value_list_.append(ui->left_foot_right_rear_value_label);
+    left_sensor_position_value_list_.append(ui->left_foot_left_rear_value_label);
+    left_sensor_position_value_list_.append(ui->left_foot_left_front_value_label);
 
-    right_sensor_position_title_list_.append(ui->right_foot_left_front_title_label);
     right_sensor_position_title_list_.append(ui->right_foot_right_front_title_label);
-    right_sensor_position_title_list_.append(ui->right_foot_left_rear_title_label);
     right_sensor_position_title_list_.append(ui->right_foot_right_rear_title_label);
+    right_sensor_position_title_list_.append(ui->right_foot_left_rear_title_label);
+    right_sensor_position_title_list_.append(ui->right_foot_left_front_title_label);
 
-    left_sensor_position_title_list_.append(ui->left_foot_left_front_title_label);
     left_sensor_position_title_list_.append(ui->left_foot_right_front_title_label);
-    left_sensor_position_title_list_.append(ui->left_foot_left_rear_title_label);
     left_sensor_position_title_list_.append(ui->left_foot_right_rear_title_label);
+    left_sensor_position_title_list_.append(ui->left_foot_left_rear_title_label);
+    left_sensor_position_title_list_.append(ui->left_foot_left_front_title_label);
 
     for (auto target_foot_value : right_sensor_position_value_list_)
     {

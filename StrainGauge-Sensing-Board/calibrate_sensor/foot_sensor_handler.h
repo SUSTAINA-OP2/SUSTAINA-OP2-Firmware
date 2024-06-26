@@ -94,7 +94,7 @@ struct FootSensorData
         if(target_foot == TargetFoot::Right){
             return {sensor_data_ch1, sensor_data_ch2, sensor_data_ch3, sensor_data_ch4};
         }else{
-            return {sensor_data_ch4, sensor_data_ch3, sensor_data_ch2, sensor_data_ch1};
+            return {sensor_data_ch1, sensor_data_ch2, sensor_data_ch3, sensor_data_ch4};
         }
     }
 
