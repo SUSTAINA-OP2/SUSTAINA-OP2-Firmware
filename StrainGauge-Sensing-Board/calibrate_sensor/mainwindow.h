@@ -69,6 +69,7 @@ private:
     void initLeftFootHandler();
 
     void writeCalibrateDataToYAML(const CalculatedResult &calibrate_data);
+    void readBiasFile(const TargetFoot &target_foot);
 
     Ui::MainWindow *ui;
     QTimer *timer;

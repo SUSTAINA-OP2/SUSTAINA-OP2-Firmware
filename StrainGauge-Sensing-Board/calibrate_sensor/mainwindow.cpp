@@ -24,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->pushButtonStartCalculation,SIGNAL(clicked()),this,SLOT(onPushStartCalculationButton()));
     connect(ui->pushButtonOutputFIle,SIGNAL(clicked()),this,SLOT(onPushOutputFileButton()));
 
+    readBiasFile(TargetFoot::Right);
+    readBiasFile(TargetFoot::Left);
+
     timer->start();
 }
 
@@ -547,6 +550,7 @@ void MainWindow::writeCalibrateDataToYAML(const CalculatedResult &calibrate_data
     for ( auto [ch, scale_data] : calibrate_data.scale)
     {
         scale[sensor_position_name.at(ch)] = scale_data;
+        setScaleData(scale_data, calibrate_data.target_foot, ch);
     }
 
     node["scale_right_front"] = scale.at("scale_right_front");
@@ -563,3 +567,39 @@ void MainWindow::writeCalibrateDataToYAML(const CalculatedResult &calibrate_data
     ofs << node;
 }
 
+void MainWindow::readBiasFile(const TargetFoot &target_foot)
+{
+  YAML::Node node;
+  std::string file_name = "right_foot_sensor_bias.yml";
+  if(target_foot == TargetFoot::Left){
+    file_name = "left_foot_sensor_bias.yml";
+  }
+
+  try{
+    node = YAML::LoadFile(file_name);
+  }catch(const std::exception &e){
+    qDebug() << "Error::" << e.what();
+    return;
+  }
+
+  FootSensorCalibrateData bias_data;
+
+  if(node["scale_right_front"]){
+    bias_data.setScale(SensorChannel::Ch1, node["scale_right_front"].as<double>());
+  }
+  if(node["scale_right_rear"]){
+    bias_data.setScale(SensorChannel::Ch2, node["scale_right_rear"].as<double>());
+  }
+  if(node["scale_left_front"]){
+    bias_data.setScale(SensorChannel::Ch4, node["scale_left_front"].as<double>());
+  }
+  if(node["scale_left_rear"]){
+    bias_data.setScale(SensorChannel::Ch3, node["scale_left_rear"].as<double>());
+  }
+
+  if(target_foot == TargetFoot::Right){
+    right_foot_calibrate_data_ = bias_data;
+  }else{
+    left_foot_calibrate_data_ = bias_data;
+  }
+}
