@@ -1,7 +1,7 @@
 #include "foot_sensor_handler.h"
 #include <chrono>
 
-FootSensorHandler::FootSensorHandler(const TargetFoot &target_foot): target_foot_(target_foot), counter(0), communication_all_times(0)
+FootSensorHandler::FootSensorHandler(const TargetFoot &target_foot): target_foot_(target_foot)
 {
   if(target_foot_ == TargetFoot::Right)
   {
@@ -94,6 +94,7 @@ std::pair<std::vector<FootSensorData<int32_t>>, FootSensorData<int32_t>> FootSen
   std::cout << "times = " << times << std::endl;
   //std::array<std::array<int64_t, times>, 4> sum_value_vec = {0};
   std::array<int64_t, 4> sum_value_vec = {0};
+  int32_t counter=0, communication_all_times=0;
   for(size_t i=0;i<times;)
   {
     //std::vector<int32_t> tmp_each_data;
@@ -133,7 +134,6 @@ std::pair<std::vector<FootSensorData<int32_t>>, FootSensorData<int32_t>> FootSen
     std::this_thread::sleep_for(1ms);
   }
   std::cout << "get times is " << times << ", communication all times is " << counter << " / " << communication_all_times << std::endl;
-  counter=0, communication_all_times=0;
   //average_data.sensor_data_ch1 = std::accumulate(sum_value_vec.at(0).begin(), sum_value_vec.at(0).end(), 0) / times;
 
   for(auto &sum_value : sum_value_vec)

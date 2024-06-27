@@ -253,7 +253,6 @@ private:
   //FootSensorData foot_sensor_data_;
   TargetFoot target_foot_;
   std::string port_name_;
-  std::size_t counter, communication_all_times;
   FootSensorData<int32_t> prev_sensor_data_;
 };
 
