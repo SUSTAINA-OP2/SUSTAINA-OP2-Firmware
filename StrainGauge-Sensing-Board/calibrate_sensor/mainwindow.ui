@@ -72,12 +72,12 @@
         <widget class="QComboBox" name="target_sensor_position_comboBox">
          <item>
           <property name="text">
-           <string>left_front</string>
+           <string>right_front</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>right_front</string>
+           <string>right_rear</string>
           </property>
          </item>
          <item>
@@ -87,7 +87,7 @@
          </item>
          <item>
           <property name="text">
-           <string>right_rear</string>
+           <string>left_front</string>
           </property>
          </item>
         </widget>
