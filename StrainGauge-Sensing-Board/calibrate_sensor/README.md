@@ -7,7 +7,9 @@
 
 ## 実行
 `./calibrate_foot_sensor_gui` を実行すると以下のGUIが表示される  
-![alt text](image.png)
+
+<img src="https://github.com/SUSTAINA-OP/SUSTAINA-OP2-Firmware/assets/53966271/a05f76e8-ddb5-42d4-8cdb-8aefcc13d607" width="50%">
+
 左上`init`ボタンをクリックするとセンサの読み取りを開始する
 
 - TargetFoot: 右足か左足か選択する
