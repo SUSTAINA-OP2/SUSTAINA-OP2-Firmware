@@ -52,7 +52,7 @@ target_compile_features(serialport
 	cxx_std_20
 )
 
-target_compile_options(serialport PRIVATE -Wall -Wextra -Werror -O2 -march=native)
+target_compile_options(serialport PRIVATE -Wall -Wextra -Werror -O2 )
 
 if(BUILD_SERIALPORT_API_TEST)
 	add_executable(serialport_test

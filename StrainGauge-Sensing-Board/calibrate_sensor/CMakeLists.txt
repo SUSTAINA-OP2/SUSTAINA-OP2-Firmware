@@ -69,7 +69,7 @@ target_include_directories(communicate_foot_sensor PUBLIC
   ${BOOST_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/lib/SerialPort/
   ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib )
 target_compile_features(communicate_foot_sensor PRIVATE cxx_std_20)
-target_compile_options(communicate_foot_sensor PRIVATE -O2 -march=native )
+target_compile_options(communicate_foot_sensor PRIVATE -O2 )
 
 target_include_directories(save_manager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -77,7 +77,7 @@ foreach(target ${compile_targets})
     target_link_libraries(${target} PRIVATE communicate_foot_sensor)
     target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_features(${target} PRIVATE cxx_std_20)
-    target_compile_options(${target} PRIVATE -O2 -march=native)
+    target_compile_options(${target} PRIVATE -O2 )
     #enable_ninja_output_coloring(${target})
 endforeach(target ${compile_targets})
 
