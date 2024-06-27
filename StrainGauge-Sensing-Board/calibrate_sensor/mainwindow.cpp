@@ -233,7 +233,7 @@ std::pair<double,double> calcScaleFromMeasuredData(std::vector<net_and_measured_
     MatrixXd X_inv = X.completeOrthogonalDecomposition().pseudoInverse();
     Ans = X_inv * Y;
     std::cout << "[calcScaleFromMeasuredData] Least squares solution: scale, offset \n" << Ans.transpose() << std::endl;
-    return {Ans(0, 0), Ans(1, 0)};
+    return {1. / Ans(0, 0), Ans(1, 0)};
 }
 
 void MainWindow::onPushStartCalculationButton()
@@ -546,10 +546,10 @@ void MainWindow::writeCalibrateDataToYAML(const CalculatedResult &calibrate_data
         scale[sensor_position_name.at(ch)] = scale_data;
     }
 
-    for ( auto [sensor_position, scale_data] : scale)
-    {
-        node[sensor_position] = scale_data;
-    }
+    node["scale_right_front"] = scale.at("scale_right_front");
+    node["scale_right_rear"] = scale.at("scale_right_rear");
+    node["scale_left_front"] = scale.at("scale_left_front");
+    node["scale_left_rear"] = scale.at("scale_left_rear");
 
     node["offset_right_front"] = 0;
     node["offset_right_rear"] = 0;
