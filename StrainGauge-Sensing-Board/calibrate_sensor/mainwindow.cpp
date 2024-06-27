@@ -239,6 +239,9 @@ std::pair<double,double> calcScaleFromMeasuredData(std::vector<net_and_measured_
 void MainWindow::onPushStartCalculationButton()
 {
     std::vector<net_and_measured_data> calc_data;
+    calculated_data_.scale.clear();
+    calculated_data_.offset.clear();
+
     if(checkCurrentTargetFoot("right"))
     {
         qDebug() << "------- right foot data-------";
