@@ -68,6 +68,8 @@ private:
     void initRightFootHandler();
     void initLeftFootHandler();
 
+    void writeCalibrateDataToYAML(const CalculatedResult &calibrate_data);
+
     Ui::MainWindow *ui;
     QTimer *timer;
     QColor default_background_color_;

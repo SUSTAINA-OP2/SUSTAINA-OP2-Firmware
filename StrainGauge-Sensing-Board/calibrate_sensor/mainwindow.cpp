@@ -256,6 +256,7 @@ void MainWindow::onPushStartCalculationButton()
             calculated_data_.offset.insert_or_assign(Ch, offset);
         }
         calculated_data_.target_foot = TargetFoot::Right;
+        writeCalibrateDataToYAML(calculated_data_);
         if((right_measured_data_.size() != 4) or (calculated_data_.scale.size() != 4))
         {
             qDebug() << "\033[41mError:: Invalid measured data size\033[0m";
@@ -279,6 +280,7 @@ void MainWindow::onPushStartCalculationButton()
             calculated_data_.offset.insert_or_assign(Ch, offset);
         }
         calculated_data_.target_foot = TargetFoot::Left;
+        writeCalibrateDataToYAML(calculated_data_);
         if((right_measured_data_.size() != 4) or (calculated_data_.scale.size() != 4))
         {
             qDebug() << "\033[41mError:: Invalid measured data size\033[0m";
@@ -516,3 +518,45 @@ void MainWindow::calibrateOffset()
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     qDebug() << "after calibrate offseti" << times;
 }
+
+void MainWindow::writeCalibrateDataToYAML(const CalculatedResult &calibrate_data)
+{
+    std::string target_foot_file_name = "right_foot_sensor_bias.yml";
+    //const std::array<std::string, 4> sensor_position_name = {"scale_right_front", "scale_right_rear", "scale_left_front", "scale_left_rear"};
+
+    const std::unordered_map<SensorChannel, std::string> sensor_position_name{
+        {SensorChannel::Ch1, "scale_right_front"},
+        {SensorChannel::Ch2, "scale_right_rear"},
+        {SensorChannel::Ch4, "scale_left_front"},
+        {SensorChannel::Ch3, "scale_left_rear"}};
+
+    if(calibrate_data.target_foot == TargetFoot::Left){
+        target_foot_file_name = "left_foot_sensor_bias.yml";
+    }
+    std::unordered_map<std::string, double> scale{
+        {"scale_right_front", 1},
+        {"scale_right_rear", 1},
+        {"scale_left_front", 1},
+        {"scale_left_rear", 1}};
+
+    YAML::Node node;
+
+    for ( auto [ch, scale_data] : calibrate_data.scale)
+    {
+        scale[sensor_position_name.at(ch)] = scale_data;
+    }
+
+    for ( auto [sensor_position, scale_data] : scale)
+    {
+        node[sensor_position] = scale_data;
+    }
+
+    node["offset_right_front"] = 0;
+    node["offset_right_rear"] = 0;
+    node["offset_left_front"] = 0;
+    node["offset_left_rear"] = 0;
+
+    std::ofstream ofs(target_foot_file_name);
+    ofs << node;
+}
+
