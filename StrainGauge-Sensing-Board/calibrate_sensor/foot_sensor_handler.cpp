@@ -30,7 +30,6 @@ FootSensorHandler::FootSensorHandler(const TargetFoot &target_foot): target_foot
   }
 
   communication_foot_sensor_.init(port_name_);
-  check_recv_data = {0xfe, 0xfe, 0x7D, 0x24, 0x81, 0x00};
 }
 
 FootSensorHandler::~FootSensorHandler()

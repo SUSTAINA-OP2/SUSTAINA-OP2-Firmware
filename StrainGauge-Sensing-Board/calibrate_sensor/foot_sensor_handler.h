@@ -233,6 +233,8 @@ namespace foot_sensor{
   FootSensorCalibrateData readCalibrateFile(const std::string &file_name, const TargetFoot &target_foot=TargetFoot::Right);
 }//end namespace foot_sensor
 
+constexpr std::array<uint8_t, 6> check_recv_data = {0xfe, 0xfe, 0x7D, 0x24, 0x81, 0x00};
+
 class FootSensorHandler
 {
 public:
@@ -251,7 +253,6 @@ private:
   //FootSensorData foot_sensor_data_;
   TargetFoot target_foot_;
   std::string port_name_;
-  std::array<uint8_t, 6> check_recv_data;
   std::size_t counter, communication_all_times;
   FootSensorData<int32_t> prev_sensor_data_;
 };
