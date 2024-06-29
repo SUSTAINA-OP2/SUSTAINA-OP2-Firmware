@@ -1,4 +1,4 @@
-#include <ADS126X.h>
+#include "./src/ADS126X/ADS126X.h"
 #include <array>
 #include <vector>
 

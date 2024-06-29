@@ -1,9 +1,0 @@
-patch -p0 -d ./sources < ./patches/patch_Icm426xxDriver_HL.c 
-patch -p0 -d ./sources < ./patches/patch_example-algo.c
-patch -p0 -d ./sources < ./patches/patch_example-algo.cproj
-patch -p0 -d ./sources < ./patches/patch_main.c
-patch -p0 -d ./sources < ./patches/patch_system-interface.h
-patch -p0 -d ./sources < ./patches/patch_Icm426xxDriver_HL.h
-patch -p0 -d ./sources < ./patches/patch_example-algo.componentinfo.xml
-patch -p0 -d ./sources < ./patches/patch_example-algo.h
-patch -p0 -d ./sources < ./patches/patch_system-interface.c

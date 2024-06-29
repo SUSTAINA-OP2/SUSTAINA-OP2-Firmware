@@ -1,9 +1,0 @@
---- examples/example-algo/example-algo.componentinfo.xml	Tue Feb 28 08:44:46 2023
-+++ examples/example-algo/example-algo.componentinfo.xml	Wed Jun 19 18:02:44 2024
-@@ -27,4 +27,4 @@
- 			<IsComponentInAtProject>true</IsComponentInAtProject>
- 		</ProjectComponent>
- 	</ProjectComponents>
--</Store>
-+</Store>
-\ No newline at end of file
