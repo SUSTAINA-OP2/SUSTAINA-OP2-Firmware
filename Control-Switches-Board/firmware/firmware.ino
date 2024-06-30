@@ -237,7 +237,6 @@ void loop()
   if (Serial1.available() > 1) // 2byte以上来たら読み込む
   {
     uint16_t receive_data = 0;
-    uint8_t read_count = 0;
     if (Serial1.available() >= rxPacket_min_length)
     {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
@@ -314,12 +313,6 @@ void loop()
         // Serial.write(txPacket, txPacket_length);
         serial1SendData(txPacket, packetIndex);
       }
-      uint8_t tmp = Serial1.read();
-      if (read_count == 0)
-        receive_data = tmp;
-      else
-        receive_data = (receive_data << 8) | tmp;
-      read_count++;
     }
     setLedState(receive_data);
   }
