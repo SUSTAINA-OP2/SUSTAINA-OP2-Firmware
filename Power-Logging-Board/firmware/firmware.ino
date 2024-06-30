@@ -1,8 +1,9 @@
 //! Firmware for Power-Logging-Board in SUSTAINA-OP2
 #include "./src/INA226/INA226.h"
-#include "./src/CRC16/CRC16.h"
+#include "./src/BitOperations/crc16.hpp"
 #include "./src/SdFat/SdFat.h"
 #include <vector>
+#include <set>
 #include <unordered_map>
 #include "Wire.h"
 
@@ -47,9 +48,22 @@ constexpr uint8_t setupBiasCommand = 0xC4;
 constexpr uint8_t boardResetCommand = 0xC5;
 
 //! error status
-constexpr uint8_t crc_errorStatus = 0b00000010;
+/**
+    NO_ERROR                    = 0b0000'0000,
+    CRC_ERROR                   = 0b0000'0001,
+    COMMAND_NOTFOUND_ERROR      = 0b0000'0010,
+    COMMAND_PROCESSING_ERROR    = 0b0000'0100,
+
+    BOARD_SPECIFIC_ERROR1       = 0b0000'1000, // sdcard error
+    BOARD_SPECIFIC_ERROR2       = 0b0001'0000,
+    BOARD_SPECIFIC_ERROR3       = 0b0010'0000,
+    BOARD_SPECIFIC_ERROR4       = 0b0100'0000,
+    BOARD_SPECIFIC_ERROR5       = 0b1000'0000,
+*/
+constexpr uint8_t crc_errorStatus = 0b00000001;
 constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
 constexpr uint8_t commandProcessing_errorStatus = 0b00000100;
+constexpr uint8_t sdcard_errorStatus = 0b00001000;
 
 constexpr uint8_t return_command_mask = 0b01111111;
 
@@ -76,6 +90,7 @@ constexpr size_t INA226_MAX_NUM = 16;
 
 constexpr size_t FLOAT_DATA_LENGTH = sizeof(float);
 
+bool is_sdcard_error = false;
 bool is_send_data = false;
 
 union uint8_tToUint32_t
@@ -245,7 +260,7 @@ struct Stopwatch
 };
 
 //! get address of connected INA226
-std::vector<uint8_t> readable_Addresses; //! readable INA226 addresses
+std::set<uint8_t> readable_Addresses; //! readable INA226 addresses
 void I2cScanner()
 {
   uint8_t error = 0;
@@ -256,7 +271,7 @@ void I2cScanner()
     error = Wire.endTransmission();
     if (error == 0)
     {
-      readable_Addresses.push_back(address);
+      readable_Addresses.insert(address);
     }
   }
 }
@@ -332,7 +347,6 @@ Ina226MeasurementData measured_data;
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
 
-CRC16 CRC;
 SdFat sd;
 File logData;
 
@@ -347,9 +361,8 @@ uint8_tToUint16_t milliSeconds;
 void setupINA226s()
 {
   INA.clear();
-  for (size_t i = 0; i < readable_Addresses.size(); i++)
+  for (const auto&address : readable_Addresses) //setは狭義の弱順序に従うので、順番に来てくれる
   {
-    uint8_t address = readable_Addresses.at(i);
     INA.emplace_back(address);
 
     if (INA.back().begin())
@@ -413,6 +426,10 @@ void loop()
     {
       uint8_t rxPacket_forward[rxPacket_forward_length] = {};
       uint8_t tx_errorStatus = 0b00000000;
+      if(is_sdcard_error == true)
+      {
+        tx_errorStatus |= sdcard_errorStatus;
+      }
 
       if (checkHeader(headerPacket, headerPacket_length, rxPacket_forward))
       {
@@ -441,7 +458,7 @@ void loop()
           }
         }
 
-        if (CRC.checkCrc16(rxPacket, rxPacket_length))
+        if (calcCRC16_XMODEM(rxPacket, rxPacket_length - crc_length) == (uint16_t)(rxPacket[rxPacket_length - crc_length] << 8) | (uint16_t)(rxPacket[rxPacket_length - crc_length + 1]))
         {
           processCommand(rxCommand, &tx_errorStatus, rxPacket);
         }
@@ -475,7 +492,7 @@ void loop()
         }
 
         //! add CRC to txPacket
-        uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - crc_length);
+        uint16_t txCrc = calcCRC16_XMODEM(txPacket, txPacket_length - crc_length);
         txPacket[packetIndex++] = lowByte(txCrc);
         txPacket[packetIndex++] = highByte(txCrc);
 
@@ -539,10 +556,11 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
     size_t detected_ina_num = readable_Addresses.size();
     txData_length = detected_ina_num;
     txData.resize(txData_length);
-    for (int i = 0; i < detected_ina_num; i++)
+    size_t tmp_loop_index = 0;
+    for (const auto&address : readable_Addresses)
     {
-      uint8_t address = readable_Addresses.at(i);
-      txData.at(i) = address;
+      txData.at(tmp_loop_index) = address;
+      tmp_loop_index++;
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
         if (address == ina226_all_bias_data[j].getAddress())
@@ -598,9 +616,8 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
       // Serial.printf("Address: %x, Voltage: %f, Current: %f\n", address, ina226_all_bias_data[ina_num].getVoltage(), ina226_all_bias_data[ina_num].getCurrent());
     }
 
-    for (int i = 0; i < readable_Addresses.size(); i++)
+    for (const auto& address :readable_Addresses)
     {
-      uint8_t address = readable_Addresses.at(i);
       for (int j = 0; j < INA226_MAX_NUM; j++)
       {
         if (address == ina226_all_bias_data[j].getAddress())
@@ -676,8 +693,10 @@ void initializeSDcard()
   if (!sd.begin(SD_CONFIG))
   {
     Serial.println(F("Failed to initialize SD card"));
+    is_sdcard_error = true;
     return;
   }
+  is_sdcard_error = false;
 
   int fileNumber = 1;   // ファイル番号の開始
   char fileName[12];    // ファイル名を格納する配列
@@ -695,6 +714,7 @@ void initializeSDcard()
         Serial.print(fileName);
         Serial.println(" を作成しました。");
         created = true; // ファイルを作成したのでフラグを立てる
+        logData.println("Jetson_Time, Arduino_msec, Send_Data, addr40_Voltage, addr40_Current, addr41_Voltage, addr41_Current, addr42_Voltage, addr42_Current, addr43_Voltage, addr43_Current,addr44_Voltage, addr44_Current, addr45_Voltage, addr45_Current, addr46_Voltage, addr46_Current, addr47_Voltage, addr47_Current, addr48_Voltage, addr48_Current, addr49_Voltage, addr49_Current, addr4a_Voltage, addr4a_Current, addr4b_Voltage, addr4b_Current, addr4c_Voltage, addr4c_Current, addr4d_Voltage, addr4d_Current, addr4e_Voltage, addr4e_Current, addr4f_Voltage, addr4f_Current");
       }
       else
       {
@@ -740,25 +760,20 @@ void WriteSDcard()
   
   static char dataStr[256];
   memset(dataStr, 0, sizeof(dataStr));
-  // char buffer[7];
 
   int32_t wrote_size = 0;
-  for (size_t i = 0; i < readable_Addresses.size(); i++)
+  for (uint8_t target_address = lowLimit_Address; target_address <= upperLimit_Address; target_address++)
   {
-    const uint8_t target_address = readable_Addresses.at(i);
-    wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "%02X,%4.2f,%5.0f,", target_address, 
-                          measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
-    // itoa(target_address, buffer, 16);
-    // strcat(dataStr, buffer);
-    // strcat(dataStr, ", ");
-
-    // dtostrf(measured_data.getVoltageData(target_address), 5, 1, buffer);
-    // strcat(dataStr, buffer);
-    // strcat(dataStr, ", ");
-
-    // dtostrf(measured_data.getCurrentData(target_address), 5, 1, buffer);
-    // strcat(dataStr, buffer);
-    // strcat(dataStr, ", ");
+    if(readable_Addresses.find(target_address) != readable_Addresses.end())
+    {
+      wrote_size += snprintf(dataStr + wrote_size,sizeof(dataStr), "%4.2f,%5.0f,", target_address, 
+                            measured_data.getVoltageData(target_address),measured_data.getCurrentData(target_address));
+    }
+    else
+    {
+      strcat(dataStr, ",,");
+      wrote_size += 2;
+    }
   }
   dataStr[wrote_size] = '\n';
   ++wrote_size;

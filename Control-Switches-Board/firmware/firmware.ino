@@ -1,8 +1,4 @@
-#include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-#include <avr/power.h>
-#endif
-
+#include "src/Adafruit_NeoPixel/Adafruit_NeoPixel.h"
 #include "./src/CRC16/CRC16.h"
 #include <vector>
 
@@ -100,26 +96,26 @@ enum class ButtonStateEnum
 
 struct ButtonState
 {
-  ButtonStateEnum last_button_state;
-  volatile uint8_t red_pushed_count = 0;
-  volatile uint8_t green_pushed_count = 0;
-  uint8_t red_state_reset_count = 0;
+  ButtonStateEnum last_button_state_;
+  volatile uint8_t red_pushed_count_ = 0;
+  volatile uint8_t green_pushed_count_ = 0;
+  uint8_t red_state_reset_count_ = 0;
   // ボタン状態を読み出す。これはメインループで一回呼ばれる事を想定している。
   ButtonStateEnum readButtonState()
   {
     ButtonStateEnum return_state;
-    if (red_pushed_count > 2)
+    if (red_pushed_count_ > 2)
     {
       return_state = ButtonStateEnum::RED_PUSHED_OVER_3TIMES;
-      red_state_reset_count = 0;
-      red_pushed_count = 0;
-      green_pushed_count = 0;
+      red_state_reset_count_ = 0;
+      red_pushed_count_ = 0;
+      green_pushed_count_ = 0;
     }
-    else if (red_pushed_count > 0)
+    else if (red_pushed_count_ > 0)
     {
       return_state = ButtonStateEnum::RED_PUSHED;
     }
-    else if (green_pushed_count > 0)
+    else if (green_pushed_count_ > 0)
     {
       return_state = ButtonStateEnum::GREEN_PUSHED;
     }
@@ -127,23 +123,23 @@ struct ButtonState
     {
       return_state = ButtonStateEnum::NOT_PUSHED;
     }
-    green_pushed_count = 0;
-    red_state_reset_count++;
-    if (red_state_reset_count > PUSHCOUNT_RESET_THRESHOLD)
+    green_pushed_count_ = 0;
+    red_state_reset_count_++;
+    if (red_state_reset_count_ > PUSHCOUNT_RESET_THRESHOLD)
     {
-      red_pushed_count = 0;
-      red_state_reset_count = 0;
+      red_pushed_count_ = 0;
+      red_state_reset_count_ = 0;
     }
     if (return_state != ButtonStateEnum::NOT_PUSHED)
     {
-      if ((last_button_state == ButtonStateEnum::RED_PUSHED_OVER_3TIMES) && (return_state == ButtonStateEnum::RED_PUSHED))
+      if ((last_button_state_ == ButtonStateEnum::RED_PUSHED_OVER_3TIMES) && (return_state == ButtonStateEnum::RED_PUSHED))
       {
         // 何もしない
-        last_button_state = last_button_state;
+        last_button_state_ = last_button_state_;
       }
       else
       {
-        last_button_state = return_state;
+        last_button_state_ = return_state;
       }
     }
     return return_state;
@@ -152,13 +148,18 @@ struct ButtonState
   // メインループの周期でボタン状態を更新する
   ButtonStateEnum lastButtonState()
   {
-    ButtonStateEnum tmp = last_button_state;
-    last_button_state = ButtonStateEnum::NOT_PUSHED;
+    ButtonStateEnum tmp = last_button_state_;
+    last_button_state_ = ButtonStateEnum::NOT_PUSHED;
     return tmp;
   }
 };
 
-static ButtonState button_state;
+
+ButtonState& getButtonState()
+{
+  static ButtonState button_state;
+  return button_state;
+}
 
 void setLedState(const uint16_t target_state)
 {
@@ -188,7 +189,7 @@ void red_pushed(void)
   unsigned long now = millis();
   if (now - red_prev_timer > 20)
   {
-    button_state.red_pushed_count++;
+    getButtonState().red_pushed_count_++;
     red_prev_timer = now;
   }
 }
@@ -199,16 +200,13 @@ void green_pushed(void)
   unsigned long now = millis();
   if (now - green_prev_timer > 20)
   {
-    button_state.green_pushed_count++;
+    getButtonState().green_pushed_count_++;
     green_prev_timer = now;
   }
 }
 
 void setup()
 {
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
-  clock_prescale_set(clock_div_1);
-#endif
   pinMode(GREEN_SWITCH_PIN, INPUT_PULLUP);
   pinMode(RED_SWITCH_PIN, INPUT_PULLUP);
   pinMode(BOARD_LED_RED, OUTPUT);
@@ -232,11 +230,11 @@ void setup()
 
 void loop()
 {
-  digitalWrite(TXDEN_PIN, LOW);    // 受信可能にする
+  digitalWrite(TXDEN_PIN, LOW);    // enable receiving
   delay(DELAYVAL_MS - 2); // 他で送れる事があるので、少し早くする
   txData.clear();
   txData_length = 0;
-  auto current_state = button_state.readButtonState();
+  auto current_state = getButtonState().readButtonState();
   if (Serial1.available() > 1) // 2byte以上来たら読み込む
   {
     uint16_t receive_data = 0;
@@ -317,6 +315,12 @@ void loop()
         // Serial.write(txPacket, txPacket_length);
         serial1SendData(txPacket, packetIndex);
       }
+      uint8_t tmp = Serial1.read();
+      if (read_count == 0)
+        receive_data = tmp;
+      else
+        receive_data = (receive_data << 8) | tmp;
+      read_count++;
     }
     setLedState(receive_data);
   }
@@ -348,7 +352,7 @@ void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPack
   {
     case Command:
     {
-      auto last_state = button_state.lastButtonState();
+      auto last_state = getButtonState().lastButtonState();
       char send_buf = static_cast<char>(last_state);
       txData_length = 1;
       txData.push_back(send_buf);

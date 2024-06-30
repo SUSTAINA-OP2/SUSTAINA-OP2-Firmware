@@ -1,1 +1,0 @@
-SUBSYSTEM=="tty", SUBSYSTEMS=="usb",  ATTRS{idVendor}=="0403",ATTRS{idProduct}=="6001", ATTRS{product}=="FT232R USB UART", SYMLINK+="DK-42688-P", OWNER="cit", GROUP="cit", MODE="0777", RUN+="/bin/sh -c 'echo 2 > /sys/bus/usb-serial/devices/$kernel/latency_timer'"
