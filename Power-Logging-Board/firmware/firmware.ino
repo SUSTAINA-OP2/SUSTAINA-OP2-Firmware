@@ -388,7 +388,7 @@ void setupINA226s()
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
       INA.back().setShuntVoltageConversionTime(4);
-      INA.back().setAverage(0);                   // Determine the number of samples of the sensor value. Here the number of samples is 16.
+      INA.back().setAverage(2);                   // Determine the number of samples of the sensor value. Here the number of samples is 16.
     }
   }
 }
