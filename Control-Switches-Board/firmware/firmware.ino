@@ -1,5 +1,5 @@
 #include "src/Adafruit_NeoPixel/Adafruit_NeoPixel.h"
-#include "./src/CRC16/CRC16.h"
+#include "./src/BitOperations/crc16.hpp"
 #include <vector>
 
 // PIN宣言
@@ -45,7 +45,6 @@ constexpr uint8_t return_command_mask = 0b01111111;
 
 size_t txData_length = 0;
 std::vector<uint8_t> txData(txData_length);
-CRC16 CRC;
 
 // 100hzを基準とする。
 constexpr uint8_t DELAYVAL_MS = 10;
@@ -271,7 +270,7 @@ void loop()
           }
         }
 
-        if (CRC.checkCrc16(rxPacket, rxPacket_length))
+        if (calcCRC16_XMODEM(rxPacket, rxPacket_length - crc_length) == (uint16_t)(rxPacket[rxPacket_length - crc_length] << 8) | (uint16_t)(rxPacket[rxPacket_length - crc_length + 1]))
         {
           processCommand(rxCommand, &tx_errorStatus, rxPacket);
           uint8_t receive_data_1 = rxPacket[rxPacket_forward_length];
@@ -308,7 +307,7 @@ void loop()
         }
 
         //! add CRC to txPacket
-        uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - crc_length);
+        uint16_t txCrc = calcCRC16_XMODEM(txPacket, txPacket_length - crc_length);
         txPacket[packetIndex++] = lowByte(txCrc);
         txPacket[packetIndex++] = highByte(txCrc);
 
