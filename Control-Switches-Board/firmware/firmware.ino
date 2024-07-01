@@ -24,7 +24,7 @@ constexpr uint8_t headerPacket[] = {0xFE, 0xFE};
 //! Audio Board:                     0xA3 (ID: 163)
 constexpr uint8_t id = 0xA1;
 
-constexpr uint8_t firmwareVersion = 0x00;
+constexpr uint8_t firmwareVersion = 0x01;
 
 //! rx packet: headder + (id + length + command + option ) + data * n + crc
 constexpr size_t headerPacket_length = sizeof(headerPacket);
@@ -36,15 +36,19 @@ constexpr size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
 constexpr size_t txPacket_min_length = headerPacket_length + 4 + crc_length;
 
 // コマンドの定義
-constexpr uint8_t Command = 0xC0;
+enum class CommandList : uint8_t
+{
+  GETSTATEANDSETLEDCOMMAND = 0xD0,
+  CHECK_FIRMWARE_VER = 0xF0,
+  UNSUPPORTED_COMMAND = 0xFF
+};
 
 constexpr uint8_t crc_errorStatus = 0b00000010;
 constexpr uint8_t commandUnsupport_errorStatus = 0b00000010;
 constexpr uint8_t commandProcessing_errorStatus = 0b00000100;
 constexpr uint8_t return_command_mask = 0b01111111;
 
-size_t txData_length = 0;
-std::vector<uint8_t> txData(txData_length);
+std::vector<uint8_t> txData;
 
 // 100hzを基準とする。
 constexpr uint8_t DELAYVAL_MS = 10;
@@ -232,7 +236,6 @@ void loop()
   digitalWrite(TXDEN_PIN, LOW);    // enable receiving
   delay(DELAYVAL_MS - 2); // 他で送れる事があるので、少し早くする
   txData.clear();
-  txData_length = 0;
   auto current_state = getButtonState().readButtonState();
   if (Serial1.available() > 1) // 2byte以上来たら読み込む
   {
@@ -271,10 +274,13 @@ void loop()
 
         if (calcCRC16_XMODEM(rxPacket, rxPacket_length - crc_length) == (uint16_t)(rxPacket[rxPacket_length - crc_length] << 8) | (uint16_t)(rxPacket[rxPacket_length - crc_length + 1]))
         {
-          processCommand(rxCommand, &tx_errorStatus, rxPacket);
-          uint8_t receive_data_1 = rxPacket[rxPacket_forward_length];
-          uint8_t receive_data_2 = rxPacket[rxPacket_forward_length + 1];
-          receive_data = (receive_data_2 << 8) | receive_data_1;
+          auto command_type = processCommand(rxCommand, &tx_errorStatus, rxPacket);
+          if(command_type == CommandList::GETSTATEANDSETLEDCOMMAND)
+          {
+            uint8_t receive_data_1 = rxPacket[rxPacket_forward_length];
+            uint8_t receive_data_2 = rxPacket[rxPacket_forward_length + 1];
+            receive_data = (receive_data_2 << 8) | receive_data_1;
+          }
         }
         else
         {
@@ -283,7 +289,7 @@ void loop()
 
         //! tx packet: headder + (command + length + error) + txData + crc
         //! data: (address + voldtage + cureent) * n
-        size_t txPacket_length = txPacket_min_length + txData_length;
+        size_t txPacket_length = txPacket_min_length + txData.size();
 
         //! make txPacket
         uint8_t txPacket[txPacket_length] = {};
@@ -301,8 +307,8 @@ void loop()
         //! add txData to txPacket
         if (!txData.empty())
         {
-          memcpy(txPacket + packetIndex, txData.data(), txData_length);
-          packetIndex += txData_length;
+          memcpy(txPacket + packetIndex, txData.data(), txData.size());
+          packetIndex += txData.size();
         }
 
         //! add CRC to txPacket
@@ -338,17 +344,26 @@ void loop()
   }
 }
 
-void processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPacket[])
+CommandList processCommand(const uint8_t &command, uint8_t *error, const uint8_t txPacket[])
 {
-  switch (command)
+  switch (static_cast<CommandList>(command))
   {
-    case Command:
+    case CommandList::GETSTATEANDSETLEDCOMMAND:
     {
       auto last_state = getButtonState().lastButtonState();
       char send_buf = static_cast<char>(last_state);
-      txData_length = 1;
       txData.push_back(send_buf);
-      break;
+      return CommandList::GETSTATEANDSETLEDCOMMAND;
+    }
+    case CommandList::CHECK_FIRMWARE_VER:
+    {
+      txData.push_back(firmwareVersion);
+      return CommandList::CHECK_FIRMWARE_VER;
+    }
+    default:
+    {
+      *error |= commandUnsupport_errorStatus;
+      return CommandList::UNSUPPORTED_COMMAND;
     }
   }
 }
