@@ -5,10 +5,10 @@ import argparse
 
 from CRC16 import CRC16 as CRC
 
-DEFAULT_ID = 0xA1
+DEFAULT_ID = 0x00
 DEFAULT_CMD = 0xA0
 DEFAULT_OPT = 0x00
-txData = [0b00100100, 0b00001001]
+txData = [0b00010001, 0b00011111]
 
 # RX packet: header + (id + length + command + option) + rxData + crc
 # TX packet: header + (id + length + command(mask) + error) + txData + crc
