@@ -1,21 +1,33 @@
+/** 
+* @file firmware.ino
+* @brief  Firmware for SUSTAINA-Audio-Boardd to be installed in SUSTAINA-OP2™
+* @author Masato Kubotera
+* @date 2024/07/05
+* @version 0x01
+* @copyright SUSTAINA-OP2™ 2024
+*/
+
 #include "Arduino.h"
 #include "src/DFRobotDFPlayerMini/DFRobotDFPlayerMini.h"
 #include <vector>
 #include "src/config.h"
 #include "src/sustaina_serial.h"
 
-DFRobotDFPlayerMini Player;
-SUSTAINA_PMX_SERIAL SutainaSerial;
+// #define SERIAL_DEBUG
 
 // USB Serial
 constexpr uint32_t USB_SERIAL_BAUDRATE = 115200;
 
+DFRobotDFPlayerMini Player;
+SUSTAINA_PMX_SERIAL SutainaSerial;
+
 void setup() {
-  // USB Serial setup
+#ifdef SERIAL_DEBUG
   Serial.begin(USB_SERIAL_BAUDRATE);
   while (!Serial) {
-    ;  // wait for serial port to connect. Needed for native USB
+    ;  // Wait for USB serial port to connect. Needed for native USB
   }
+#endif  // SERIAL_DEBUG
 
   // RS485 Serial setup
   SutainaSerial.setupSerial();

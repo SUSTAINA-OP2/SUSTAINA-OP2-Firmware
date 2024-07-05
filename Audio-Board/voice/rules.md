@@ -12,6 +12,12 @@
 - 開始無音: 0.50
 - 終了無音: 0.50
 
+### 書込み
+
+Copy your mp3 into you micro SD card
+NOTE: The order you copy the mp3 into micro SD card will affect the order mp3 played , which means play(1) function will play the first mp3 copied into micro SD card.
+https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#Connection_Diagram
+
 ### ファイル名称
 
 - 常用フレーズ (001 ~ 019)
