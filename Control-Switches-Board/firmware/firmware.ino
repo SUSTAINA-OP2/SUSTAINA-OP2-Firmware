@@ -1,6 +1,6 @@
 /** 
 * @file firmware.ino
-* @brief  Firmware for SUSTAINA-Control-Switches-Boardd to be installed in SUSTAINA-OP2™
+* @brief  Firmware for SUSTAINA-Control-Switches-Board to be installed in SUSTAINA-OP2™
 * @author Satoshi Inoue, Masato Kubotera
 * @date 2024/07/05
 * @version 0x01
