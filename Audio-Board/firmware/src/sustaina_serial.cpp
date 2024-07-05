@@ -21,6 +21,11 @@ bool SUSTAINA_PMX_SERIAL::checkHeader() {
 
 bool SUSTAINA_PMX_SERIAL::readPacket() {
   if (RS485_SERIAL.available() >= RX_PACKET_MIN_LENGTH) {
+    rxData.clear();
+    txData.clear();
+    rxPacket.clear();
+    txError = 0b00000000;
+
     rxPacket.resize(RX_PACKET_FORWARD_LENGTH);
 
     if (checkHeader()) {
@@ -42,6 +47,15 @@ bool SUSTAINA_PMX_SERIAL::readPacket() {
         rxPacket[i] = RS485_SERIAL.read();
       }
 
+      rxDataLength = rxLength - RX_PACKET_FORWARD_LENGTH - CRC_LENGTH;
+      
+      if (rxDataLength > 0){
+        rxData.resize(rxDataLength);
+        for (size_t i = 0; i < rxLength - CRC_LENGTH; i++) {
+          rxData[i] = rxPacket[i + RX_PACKET_FORWARD_LENGTH];
+        }
+      }
+
       return true;
     }
   }
@@ -49,8 +63,6 @@ bool SUSTAINA_PMX_SERIAL::readPacket() {
 }
 
 bool SUSTAINA_PMX_SERIAL::checkCRCandID() {
-  txError = 0b00000000; // reset
-
   if (rxId != BOARD_ID)
     return false;
 
@@ -105,6 +117,4 @@ void SUSTAINA_PMX_SERIAL::sendPacket() {
   RS485_SERIAL.write(txPacket.data(), txPacket_length);
   RS485_SERIAL.flush();
   digitalWrite(RS485_TXDEN_PIN, LOW);
-
-  txData.clear();
 }

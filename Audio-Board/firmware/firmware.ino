@@ -4,8 +4,6 @@
 #include "src/config.h"
 #include "src/sustaina_serial.h"
 
-using namespace std;
-
 DFRobotDFPlayerMini Player;
 SUSTAINA_PMX_SERIAL SutainaSerial;
 
@@ -41,7 +39,7 @@ void loop() {
             Player.play(static_cast<int16_t>(SutainaSerial.rxOption));
             break;
           }
-          SutainaSerial.txError |= CMD_PROCESS_ERROR;
+          SutainaSerial.txError |= SutainaSerial.CMD_PROCESS_ERROR;
           break;
 
         case PLAYER_RESET_CMD:
@@ -49,7 +47,7 @@ void loop() {
           break;
 
         default:
-          SutainaSerial.txError |= NOT_EXISTENT_CMD_ERROR;
+          SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
       }
     }
 

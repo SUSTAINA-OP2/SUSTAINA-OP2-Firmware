@@ -15,6 +15,7 @@ ser.timeout = 1/10
 cheackFirmwareCommand = 0xD0
 
 header = [0xFE, 0xFE]
+txData = []
 
 try:
     parser = argparse.ArgumentParser(description='Command and Loop Example')
@@ -43,11 +44,12 @@ try:
         txBuf.extend(header)
         txBuf.append(id)
 
-        tx_length = len(header) + 6 
+        tx_length = len(header) + 6 + len(txData)
         txBuf.append(tx_length)
 
         txBuf.append(command)
         txBuf.append(option)
+        txBuf.extend(txData)
 
         crc = CRC.getCrc16(txBuf)
         txBuf.extend(crc.to_bytes(2, byteorder="little"))
