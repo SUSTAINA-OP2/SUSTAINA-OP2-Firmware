@@ -6,11 +6,6 @@ device_rules_path=/etc/udev/rules.d/
 
 cd "$(dirname "$0")"
 
-if [ -e /etc/udev/rules.d/17_DK-42688-P.rules ]; then
-	sudo rm /etc/udev/rules.d/17_DK-42688-P.rules
-fi
-sudo cp  ./DK-42688-P/17_DK-42688-P.rules $device_rules_path
-
 if [ -e /etc/udev/rules.d/13_FTDI_Serial.rules ]; then
 	sudo rm /etc/udev/rules.d/13_FTDI_Serial.rules
 fi
