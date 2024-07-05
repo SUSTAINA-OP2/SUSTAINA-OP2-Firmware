@@ -229,7 +229,8 @@ void loop() {
         default:
           SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
       }
-    }
-    SutainaSerial.sendPacket();
+      
+      SutainaSerial.sendPacket();
+    }    
   }
 }
