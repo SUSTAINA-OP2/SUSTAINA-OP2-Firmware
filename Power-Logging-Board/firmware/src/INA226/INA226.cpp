@@ -65,47 +65,35 @@ uint8_t INA226::getAddress()
   return _address;
 };
 
-void does_readRegisterError(INA226Error& error_code,const uint16_t& value) {
-  if (value == 0xFFFF) {
-    error_code.error_code_ = INA226Error::INA226ErrorEnum::READ_REGISTER_ERROR;
-    return;
-  }
-  error_code.error_code_ = INA226Error::INA226ErrorEnum::NONE;
-  return;
-}
 
 ////////////////////////////////////////////////////////
 //
 //  CORE FUNCTIONS
 //
-float INA226::getBusVoltage(INA226Error& error_code)
+float INA226::getBusVoltage()
 {
   uint16_t val = _readRegister(INA226_BUS_VOLTAGE);
-  does_readRegisterError(error_code,val);
   return val * 1.25e-3;  //  fixed 1.25 mV
 }
 
 
-float INA226::getShuntVoltage(INA226Error& error_code)
+float INA226::getShuntVoltage()
 {
   int16_t val = _readRegister(INA226_SHUNT_VOLTAGE);
-  does_readRegisterError(error_code,val);
   return val * 2.5e-6;   //  fixed 2.50 uV
 }
 
 
-float INA226::getCurrent(INA226Error& error_code)
+float INA226::getCurrent()
 {
   int16_t val = _readRegister(INA226_CURRENT);
-  does_readRegisterError(error_code,val);
   return val * _current_LSB;
 }
 
 
-float INA226::getPower(INA226Error& error_code)
+float INA226::getPower()
 {
   uint16_t val = _readRegister(INA226_POWER);
-  does_readRegisterError(error_code,val);
   return val * (_current_LSB * 25);  //  fixed 25 Watt
 }
 
