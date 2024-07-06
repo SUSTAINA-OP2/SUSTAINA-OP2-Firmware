@@ -214,23 +214,24 @@ void loop() {
   auto currentState = readButtonState();
 
   if (SutainaSerial.readPacket()) {
-    if (SutainaSerial.checkCRCandID() && !SutainaSerial.commandProcess()) {
-      switch (SutainaSerial.rxCommand) {
-        case GET_STATE_AND_SET_LED_CMD:
-          {
-            uint16_t receivedData = (SutainaSerial.rxData[1] << 8) | SutainaSerial.rxData[0];
-            setupNeopixels(receivedData);
+    if (SutainaSerial.checkCRCandID()) {
+      if (SutainaSerial.commandProcess()) {
+        switch (SutainaSerial.rxCommand) {
+          case GET_STATE_AND_SET_LED_CMD:
+            {
+              uint16_t receivedData = (SutainaSerial.rxData[1] << 8) | SutainaSerial.rxData[0];
+              setupNeopixels(receivedData);
 
-            uint8_t sendState = static_cast<uint8_t>(getLastButtonState());
-            SutainaSerial.txData.push_back(sendState);
-            break;
-          }
+              uint8_t sendState = static_cast<uint8_t>(getLastButtonState());
+              SutainaSerial.txData.push_back(sendState);
+              break;
+            }
 
-        default:
-          SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
+          default:
+            SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
+        }
       }
-      
       SutainaSerial.sendPacket();
-    }    
+    }
   }
 }
