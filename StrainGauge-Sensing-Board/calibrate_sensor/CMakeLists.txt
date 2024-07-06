@@ -37,7 +37,8 @@ target_sources(communicate_foot_sensor PRIVATE
   foot_sensor_handler.h
   foot_sensor_save_manager.h
   foot_sensor_save_manager.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/crc16.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/PmxCRC/PmxCRC.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/PmxCRC/PmxCRC.cpp
 )
 
 target_sources(save_manager PRIVATE

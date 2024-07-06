@@ -1,13 +1,18 @@
 #include "communicate_foot_sensor.h"
 #include <sys/resource.h>
-#include "lib/crc16.hpp"
 #include <thread>
 #include <chrono>
 
 CommunicateFootSensor::CommunicateFootSensor(): readlen(24)//: send_buf_{250, 240, 245, 230, 252}
 {
   //send_buf_.fill(0);
-  send_buf_  = {0xfe, 0xfe, 0x7D, 0x08, 0x81, 0x00, 0xf2, 0x6c};
+
+
+
+  send_buf_  = {0xfe, 0xfe, 0xA0, 0xA0, 0x81, 0x00};
+  uint16_t crc_num  = crc.getCrc16(send_buf_.data(), send_buf_.size());
+  send_buf_.push_back(crc_num & 0xff);
+  send_buf_.push_back((crc_num >> 8) & 0xff);
 }
 
 CommunicateFootSensor::~CommunicateFootSensor()
@@ -64,9 +69,9 @@ std::optional<std::array<uint8_t, 32>> CommunicateFootSensor::getRawData()
   return recvbuf;
 }
 
-bool CommunicateFootSensor::calcCheckSum(const std::array<uint8_t, 32> &data)
+bool CommunicateFootSensor::calcCheckSum(std::array<uint8_t, 32> data)
 {
-    const uint_fast16_t checksum = calcCRC16_XMODEM(data, readlen - 2); // crc16の計算
+    const uint_fast16_t checksum = crc.getCrc16(data.data(), readlen - 2); // crc16の計算
     const uint_fast16_t packet_checksum = static_cast<uint_fast16_t>(data[readlen - 2] |
                                                                         data[readlen - 1] << 8); // パケットの最後の2byteがcrc16
     if(checksum != packet_checksum)
