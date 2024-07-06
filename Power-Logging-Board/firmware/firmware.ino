@@ -11,18 +11,17 @@
 #include <ctime>
 
 #define DEBUG 1
+#ifdef DEBUG
+// Serial output for debugging PLB( = Power-Logging-Board).
+#define PLB_DEBUG_SERIAL_PRINTF(...) Serial.printf(__VA_ARGS__);
+#define PLB_DEBUG_SERIAL_PRINTLN(...) Serial.println(__VA_ARGS__);
+#else //! DEBUG
+#define PLB_DEBUG_SERIAL_PRINTF(...) ;
+#define PLB_DEBUG_SERIAL_PRINTLN(...) ;
+#endif //! DEBUG
 
 // freeRTOS settings.
 #define INCLUDE_vTaskSuspend 1
-
-#ifdef DEBUG
-  // Serial output for debugging PLB( = Power-Logging-Board). 
-  #define PLB_DEBUG_SERIAL_PRINTF(...) Serial.printf(__VA_ARGS__);
-  #define PLB_DEBUG_SERIAL_PRINTLN(...) Serial.println(__VA_ARGS__);
-#else //! DEBUG
-  #define PLB_DEBUG_SERIAL_PRINTF(...) ;
-  #define PLB_DEBUG_SERIAL_PRINTLN(...) ;
-#endif //! DEBUG
 
 /**
    setting by user
@@ -376,7 +375,7 @@ struct SDWriter
   {
     if (sd_ == NULL && logData_ == NULL)
     {
-      initializeSDcard(); // SDカードが一番最初にセットアップされていない時
+      initializeSDcard(); // When the SD card is not set up first.
       sd_card_not_exist_ = false;
       return !sd_card_not_exist_;
     }
@@ -384,11 +383,11 @@ struct SDWriter
     {
       sd_card_not_exist_ = true;
       is_sdcard_error = true;
-      if (sd_card_not_exist_) // SDカードが無い状態 -> ある状態に変わった時
+      if (sd_card_not_exist_) // When the SD card changes from not connected -> connected.
       {
         Serial.println("Start reconnecting SD card...");
-        sd_->end();         // SDカードを終了
-        initializeSDcard(); // SDカードを再度セットアップ
+        sd_->end();         // Finish the SD card
+        initializeSDcard(); // Set up the SD card again.
         Serial.println("SD card is reconnected");
         sd_card_not_exist_ = false;
       }
@@ -417,7 +416,6 @@ struct SDWriter
    */
   bool flush()
   {
-    // セマフォを取る
     memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_));
     if (xSemaphoreTake(shared_data_semaphore, portMAX_DELAY) == pdTRUE) //    ------------------------------------- Lock Acuqire
     {
@@ -427,19 +425,19 @@ struct SDWriter
         xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
         return false;
       }
-      if (current_data_size_ < (sd_write_buffer_size_ - 500)) // あまり小さいサイズの時は書き込まない
+      if (current_data_size_ < (sd_write_buffer_size_ - 500)) // Don't write in too small a size.
       {
         xSemaphoreGive(shared_data_semaphore); //    ------------------------------------- Lock Release
         return false;
       }
-      memcpy(sd_write_buffer_, data_buffer_, current_data_size_); // データを書き込み用バッファにコピー
+      memcpy(sd_write_buffer_, data_buffer_, current_data_size_); // Copy data into a write buffer.
       const size_t write_size = current_data_size_;
       current_data_size_ = 0;
-      memset(data_buffer_, 0, sizeof(data_buffer_));         // データバッファをクリア
+      memset(data_buffer_, 0, sizeof(data_buffer_));         // Clear data buffer.
       xSemaphoreGive(shared_data_semaphore);                 //    ------------------------------------- Lock Release
-      logData_->write(sd_write_buffer_, write_size);         // 書き込み
-      memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_)); // 書き込み用バッファをクリア
-      logData_->flush();                                     // フラッシュ
+      logData_->write(sd_write_buffer_, write_size);         // Write data to SD card.
+      memset(sd_write_buffer_, 0, sizeof(sd_write_buffer_)); // Clear data buffer.
+      logData_->flush();                                     // Flushing data to SD card.
       return true;
     }
     return false;
@@ -457,11 +455,11 @@ void sdWriterTask(void *pvParameters)
     {
       if (sd_writer.flush())
       {
-        vTaskDelay(10 / portTICK_PERIOD_MS); // 10msec毎にチェック
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Check per 10msec.
       }
       else
       {
-        vTaskDelay(5 / portTICK_PERIOD_MS); // 5msec待つ
+        vTaskDelay(5 / portTICK_PERIOD_MS); // Waits 5msec
       }
     }
     else
@@ -595,7 +593,7 @@ void setupINA226s()
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
       INA.back().setShuntVoltageConversionTime(4);
-      INA.back().setAverage(2);                   // Determine the number of samples of the sensor value. Here the number of samples is 16.
+      INA.back().setAverage(2); // Determine the number of samples of the sensor value. Here the number of samples is 16.
     }
   }
 }
@@ -634,22 +632,26 @@ void loop()
       {
         //! is Connected
         const uint8_t target_address = ina_sensor.getAddress();
-        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end())          // When no bias is set.
+        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) // When no bias is set.
         {
           INA226Error ec;
           const float current_mA = ina_sensor.getCurrent_mA(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           const float voltage_V = ina_sensor.getBusVoltage(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           measured_data.setData(target_address, voltage_V, current_mA);
         }
         else
         {
           INA226Error ec;
           const float current_mA = ina_sensor.getCurrent_mA(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           const float voltage_V = ina_sensor.getBusVoltage(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           measured_data.setData(target_address, voltage_V + ina226_detected_bias_data[target_address].getVoltage(), current_mA + (ina226_detected_bias_data[target_address].getCurrent() * (current_mA / 1000.0f)));
           PLB_DEBUG_SERIAL_PRINTF("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
@@ -854,7 +856,7 @@ void processCommand(const uint8_t &CMD, uint8_t *error, const uint8_t rxPacket[]
         if (address == ina226_all_bias_data[j].getAddress())
         {
           ina226_detected_bias_data[address].setBiasData(address, ina226_all_bias_data[j].getVoltage(), ina226_all_bias_data[j].getCurrent());
-          PLB_DEBUG_SERIAL_PRINTF("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(),ina226_detected_bias_data[address].getVoltage(),ina226_detected_bias_data[address].getCurrent());
+          PLB_DEBUG_SERIAL_PRINTF("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(), ina226_detected_bias_data[address].getVoltage(), ina226_detected_bias_data[address].getCurrent());
           break;
         }
       }
@@ -921,9 +923,9 @@ void RS485SerialSendData(uint8_t *txPacket, const size_t &LENGTH)
 
 void initializeSDcard()
 {
-  // SDカードの終了(開始されている場合があるため)
+  // End the SD card (If it has been initialized)
   sd.end();
-  //logDataはデストラクト時にクローズされないので、そのまま代入して良い
+  // LogData does not close automatically on destruction, so it is safe to assign it directly.
   PLB_DEBUG_SERIAL_PRINTLN(F("Initializing SD card..."));
   if (!sd.begin(SD_CONFIG))
   {
