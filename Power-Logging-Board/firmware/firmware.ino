@@ -13,12 +13,12 @@
 #define DEBUG 0
 
 #ifdef DEBUG
-  // Serial output for debugging PLB( = Power-Logging-Board). 
-  #define PLB_DEBUG_SERIAL_PRINTF(...) Serial.printf(__VA_ARGS__);
-  #define PLB_DEBUG_SERIAL_PRINTLN(...) Serial.println(__VA_ARGS__);
+// Serial output for debugging PLB( = Power-Logging-Board).
+#define PLB_DEBUG_SERIAL_PRINTF(...) Serial.printf(__VA_ARGS__);
+#define PLB_DEBUG_SERIAL_PRINTLN(...) Serial.println(__VA_ARGS__);
 #else //! DEBUG
-  #define PLB_DEBUG_SERIAL_PRINTF(...) ;
-  #define PLB_DEBUG_SERIAL_PRINTLN(...) ;
+#define PLB_DEBUG_SERIAL_PRINTF(...) ;
+#define PLB_DEBUG_SERIAL_PRINTLN(...) ;
 #endif //! DEBUG
 
 /**
@@ -388,7 +388,7 @@ void setupINA226s()
     {
       INA.back().setMaxCurrentShunt(38.73, 0.002);
       INA.back().setShuntVoltageConversionTime(4);
-      INA.back().setAverage(2);                   // Determine the number of samples of the sensor value. Here the number of samples is 16.
+      INA.back().setAverage(2); // Determine the number of samples of the sensor value. Here the number of samples is 16.
     }
   }
 }
@@ -426,22 +426,26 @@ void loop()
       {
         //! is Connected
         const uint8_t target_address = ina_sensor.getAddress();
-        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end())          // When no bias is set.
+        if (ina226_detected_bias_data.find(target_address) == ina226_detected_bias_data.end()) // When no bias is set.
         {
           INA226Error ec;
           const float current_mA = ina_sensor.getCurrent_mA(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           const float voltage_V = ina_sensor.getBusVoltage(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           measured_data.setData(target_address, voltage_V, current_mA);
         }
         else
         {
           INA226Error ec;
           const float current_mA = ina_sensor.getCurrent_mA(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           const float voltage_V = ina_sensor.getBusVoltage(ec);
-          if(ec) continue;        //If error occurs, skip this sensor
+          if (ec)
+            continue; // If error occurs, skip this sensor
           measured_data.setData(target_address, voltage_V + ina226_detected_bias_data[target_address].getVoltage(), current_mA + (ina226_detected_bias_data[target_address].getCurrent() * (current_mA / 1000.0f)));
           PLB_DEBUG_SERIAL_PRINTF("Getdata Address: %x, Voltage: %f, Current: %f\n", target_address, ina226_detected_bias_data[target_address].getVoltage(), ina226_detected_bias_data[target_address].getCurrent());
         }
@@ -646,7 +650,7 @@ void processCommand(const uint8_t &CMD, uint8_t *error, const uint8_t rxPacket[]
         if (address == ina226_all_bias_data[j].getAddress())
         {
           ina226_detected_bias_data[address].setBiasData(address, ina226_all_bias_data[j].getVoltage(), ina226_all_bias_data[j].getCurrent());
-          PLB_DEBUG_SERIAL_PRINTF("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(),ina226_detected_bias_data[address].getVoltage(),ina226_detected_bias_data[address].getCurrent());
+          PLB_DEBUG_SERIAL_PRINTF("Update detected bias address: %x vol: %f cur: %f\n", ina226_detected_bias_data[address].getAddress(), ina226_detected_bias_data[address].getVoltage(), ina226_detected_bias_data[address].getCurrent());
           break;
         }
       }
