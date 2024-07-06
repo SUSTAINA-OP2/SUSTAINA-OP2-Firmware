@@ -45,7 +45,7 @@ void setup() {
 void loop() {
   if (SutainaSerial.readPacket()) {
     if (SutainaSerial.checkCRCandID()) {
-      if (SutainaSerial.commandProcess()) {
+      if (!SutainaSerial.commandProcess()) {
         switch (SutainaSerial.rxCommand) {
           case PLAY_SOUND_CMD:
             if (SutainaSerial.rxOption < 100) {

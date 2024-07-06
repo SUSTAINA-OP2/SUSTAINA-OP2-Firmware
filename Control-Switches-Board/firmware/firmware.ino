@@ -215,7 +215,7 @@ void loop() {
 
   if (SutainaSerial.readPacket()) {
     if (SutainaSerial.checkCRCandID()) {
-      if (SutainaSerial.commandProcess()) {
+      if (!SutainaSerial.commandProcess()) {
         switch (SutainaSerial.rxCommand) {
           case GET_STATE_AND_SET_LED_CMD:
             {
