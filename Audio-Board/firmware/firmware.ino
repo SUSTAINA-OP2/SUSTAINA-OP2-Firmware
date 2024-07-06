@@ -44,25 +44,26 @@ void setup() {
 
 void loop() {
   if (SutainaSerial.readPacket()) {
-    if (SutainaSerial.checkCRCandID() && !SutainaSerial.commandProcess()) {
-      switch (SutainaSerial.rxCommand) {
-        case PLAY_SOUND_CMD:
-          if (SutainaSerial.rxOption < 100) {
-            Player.play(static_cast<int16_t>(SutainaSerial.rxOption));
+    if (SutainaSerial.checkCRCandID()) {
+      if (SutainaSerial.commandProcess()) {
+        switch (SutainaSerial.rxCommand) {
+          case PLAY_SOUND_CMD:
+            if (SutainaSerial.rxOption < 100) {
+              Player.play(static_cast<int16_t>(SutainaSerial.rxOption));
+              break;
+            }
+            SutainaSerial.txError |= SutainaSerial.CMD_PROCESS_ERROR;
             break;
-          }
-          SutainaSerial.txError |= SutainaSerial.CMD_PROCESS_ERROR;
-          break;
 
-        case PLAYER_RESET_CMD:
-          Player.reset();
-          break;
+          case PLAYER_RESET_CMD:
+            Player.reset();
+            break;
 
-        default:
-          SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
+          default:
+            SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
+        }
       }
-
       SutainaSerial.sendPacket();
-    }    
+    }
   }
 }
