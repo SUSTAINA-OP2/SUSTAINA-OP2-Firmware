@@ -113,20 +113,21 @@ void loop() {
   }
 
   if (SutainaSerial.readPacket()) {
-    if (SutainaSerial.checkCRCandID() && !SutainaSerial.commandProcess()) {
-      switch (SutainaSerial.rxCommand) {
-        case SEND_VAL_CMD:
-          for (const int32_t &val : force) {
-            SutainaSerial.txData.push_back(val & 0xFF);
-            SutainaSerial.txData.push_back((val >> 8) & 0xFF);
-            SutainaSerial.txData.push_back((val >> 16) & 0xFF);
-            SutainaSerial.txData.push_back((val >> 24) & 0xFF);
-          }
+    if (SutainaSerial.checkCRCandID()) {
+      if (!SutainaSerial.commandProcess()) {
+        switch (SutainaSerial.rxCommand) {
+          case SEND_VAL_CMD:
+            for (const int32_t &val : force) {
+              SutainaSerial.txData.push_back(val & 0xFF);
+              SutainaSerial.txData.push_back((val >> 8) & 0xFF);
+              SutainaSerial.txData.push_back((val >> 16) & 0xFF);
+              SutainaSerial.txData.push_back((val >> 24) & 0xFF);
+            }
 
-        default:
-          SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
+          default:
+            SutainaSerial.txError |= SutainaSerial.NOT_EXISTENT_CMD_ERROR;
+        }
       }
-
       SutainaSerial.sendPacket();
     }
   }
