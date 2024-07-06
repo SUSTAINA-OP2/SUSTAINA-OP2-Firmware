@@ -71,6 +71,20 @@ enum ina226_timing_enum {
     INA226_8300_us = 7
 };
 
+struct INA226Error
+{
+  enum INA226ErrorEnum
+  {
+    NONE = 0,
+    READ_REGISTER_ERROR = 1,
+  };
+  uint8_t error_code_;  //  error code
+
+  operator bool() const {
+    return error_code_ != NONE;
+  }
+};
+
 
 class INA226
 {
@@ -84,25 +98,25 @@ public:
 
 
   //  Core functions
-  float    getBusVoltage();       //  Volt
-  float    getShuntVoltage();     //  Volt
-  float    getCurrent();          //  Ampere
-  float    getPower();            //  Watt
+  float    getBusVoltage(INA226Error& error_code);       //  Volt
+  float    getShuntVoltage(INA226Error& error_code);     //  Volt
+  float    getCurrent(INA226Error& error_code);          //  Ampere
+  float    getPower(INA226Error& error_code);            //  Watt
   //  See #35
   bool     isConversionReady();   //  conversion ready flag is set.
   bool     waitConversionReady(uint32_t timeout = INA226_MAX_WAIT_MS);
 
 
   //  Scale helpers milli range
-  float    getBusVoltage_mV()   { return getBusVoltage()   * 1e3; };
-  float    getShuntVoltage_mV() { return getShuntVoltage() * 1e3; };
-  float    getCurrent_mA()      { return getCurrent()      * 1e3; };
-  float    getPower_mW()        { return getPower()        * 1e3; };
+  float    getBusVoltage_mV(INA226Error& error_code)   { return getBusVoltage(error_code)   * 1e3; };
+  float    getShuntVoltage_mV(INA226Error& error_code) { return getShuntVoltage(error_code) * 1e3; };
+  float    getCurrent_mA(INA226Error& error_code)      { return getCurrent(error_code)      * 1e3; };
+  float    getPower_mW(INA226Error& error_code)        { return getPower(error_code)        * 1e3; };
   //  Scale helpers micro range
-  float    getBusVoltage_uV()   { return getBusVoltage()   * 1e6; };
-  float    getShuntVoltage_uV() { return getShuntVoltage() * 1e6; };
-  float    getCurrent_uA()      { return getCurrent()      * 1e6; };
-  float    getPower_uW()        { return getPower()        * 1e6; };
+  float    getBusVoltage_uV(INA226Error& error_code)   { return getBusVoltage(error_code)   * 1e6; };
+  float    getShuntVoltage_uV(INA226Error& error_code) { return getShuntVoltage(error_code) * 1e6; };
+  float    getCurrent_uA(INA226Error& error_code)      { return getCurrent(error_code)      * 1e6; };
+  float    getPower_uW(INA226Error& error_code)        { return getPower(error_code)        * 1e6; };
 
 
   //  Configuration
