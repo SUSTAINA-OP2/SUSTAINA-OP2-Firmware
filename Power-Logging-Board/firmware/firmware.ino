@@ -304,7 +304,6 @@ struct SDWriter
 
   void setSDcard(SdFat *sd, File *logData)
   {
-    // 全てのロックを取得
     if (shared_data_semaphore == NULL)
     {
       shared_data_semaphore = xSemaphoreCreateMutex();
