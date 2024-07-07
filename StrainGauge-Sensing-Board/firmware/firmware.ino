@@ -25,6 +25,7 @@ SUSTAINA_PMX_SERIAL SutainaSerial;
 #define NUM_AVG 5  //number of samples to use for comparing the value to the median
 
 ADS126X adc;
+
 std::array<int32_t, 4> force;
 std::array<uint8_t, 4> pos_pin{ 0, 2, 4, 6 };
 std::array<uint8_t, 4> neg_pin{ 1, 3, 5, 7 };
