@@ -47,11 +47,11 @@ bool SUSTAINA_PMX_SERIAL::readPacket() {
         rxPacket[i] = RS485_SERIAL.read();
       }
 
-      rxDataLength = rxLength - RX_PACKET_FORWARD_LENGTH - CRC_LENGTH;
+      rxDataLength = rxLength - RX_PACKET_MIN_LENGTH;
       
       if (rxDataLength > 0){
         rxData.resize(rxDataLength);
-        for (size_t i = 0; i < rxLength - CRC_LENGTH; i++) {
+        for (size_t i = 0; i < rxDataLength; i++) {
           rxData[i] = rxPacket[i + RX_PACKET_FORWARD_LENGTH];
         }
       }
