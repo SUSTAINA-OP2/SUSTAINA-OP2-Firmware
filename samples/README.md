@@ -4,11 +4,14 @@
 
 ### 特定の音声ファイルを再生する
 - command: 0xA0
-- opt: 0x00 ~ 0x63 (再生するファイル番号)
+- opt: 0x00
 - loop: 1 (連続再生は基本不可。再生終了まで待つ必要がある)
 
+sample.py内のtxDataを変更することで再生するファイルを変更できる
+- `txData = [1]` 001_* を再生
+
 ```bash
-python3 sample.py --id 0xA3 --cmd 0xA0 --opt 0x0A --loop 1
+python3 sample.py --id 0xA3 --cmd 0xA0 --loop 1
 ```
 
 ## Control-Switches-Board
