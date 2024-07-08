@@ -10,7 +10,7 @@
 
 #include <ctime>
 
-#define DEBUG 1
+// #define DEBUG 1
 #ifdef DEBUG
 // Serial output for debugging PLB( = Power-Logging-Board).
 #define PLB_DEBUG_SERIAL_PRINTF(...) Serial.printf(__VA_ARGS__);
