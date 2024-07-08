@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 // Firmware version
-constexpr uint8_t FIRMWARE_VERSION = 0x01;  // Last updated: 2024/07/05
+constexpr uint8_t FIRMWARE_VERSION = 0x01;  // Last updated: 2024/07/07
 
 // Control-Switches-Board dependent settings
 constexpr uint8_t BOARD_ID = 0xA0;
