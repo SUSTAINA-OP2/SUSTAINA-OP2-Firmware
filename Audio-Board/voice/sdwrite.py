@@ -2,7 +2,7 @@ import os
 import shutil
 
 # Directory containing the audio files
-source_dir = "sdcard/"
+source_dir = "201/"
 # Mount point of the SD card (modify as needed)
 destination_dir = "E:/"
 
