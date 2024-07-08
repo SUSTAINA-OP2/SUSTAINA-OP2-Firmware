@@ -5,8 +5,11 @@
 プロジェクトファイル: 
 
 **話者**
-- 201: 春日部つむぎ（ノーマル）
-- 203: 琴詠ニア（ノーマル）
+SUSTAINA-OP2™ 201 音声 - VOICEVOX:春日部つむぎ
+SUSTAINA-OP2™ 202 音声 - VOICEVOX:†聖騎士 紅桜†
+SUSTAINA-OP2™ 203 音声 - VOICEVOX:琴詠ニア
+SUSTAINA-OP2™ 204 音声 - VOICEVOX:猫使アル
+SUSTAINA-OP2™ 205 音声 - VOICEVOX:猫使ビィ
 
 **共通設定**
 - 話速: 1.00
@@ -119,11 +122,3 @@ https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#Connection_Diagram
   - 088: 
   - 089: 
 - 空き ( 090_* ~ 099_* )
-
-## クレジット
-
-SUSTAINA-OP2™ 201 音声 - VOICEVOX:春日部つむぎ
-SUSTAINA-OP2™ 202 音声 - VOICEVOX:†聖騎士 紅桜†
-SUSTAINA-OP2™ 203 音声 - VOICEVOX:琴詠ニア
-SUSTAINA-OP2™ 204 音声 - VOICEVOX:猫使アル
-SUSTAINA-OP2™ 205 音声 - VOICEVOX:猫使ビィ
