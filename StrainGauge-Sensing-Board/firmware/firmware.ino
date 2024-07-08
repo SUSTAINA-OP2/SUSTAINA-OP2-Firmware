@@ -2,8 +2,8 @@
 * @file firmware.ino
 * @brief  Firmware for SUSTAINA-StrainGauge-Sensing-Board to be installed in SUSTAINA-OP2™
 * @author Riku Yokoo, Masato Kubotera
-* @date 2024/07/05
-* @version 0x00
+* @date 2024/07/07
+* @version 0x01
 * @copyright SUSTAINA-OP2™ 2024
 * @copyright Hamburg Bit-Bots 2019
 */
