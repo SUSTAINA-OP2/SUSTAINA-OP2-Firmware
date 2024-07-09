@@ -5,11 +5,11 @@
 プロジェクトファイル: 
 
 **話者**
-SUSTAINA-OP2™ 201 音声 - VOICEVOX:春日部つむぎ
-SUSTAINA-OP2™ 202 音声 - VOICEVOX:†聖騎士 紅桜†
-SUSTAINA-OP2™ 203 音声 - VOICEVOX:琴詠ニア
-SUSTAINA-OP2™ 204 音声 - VOICEVOX:猫使アル
-SUSTAINA-OP2™ 205 音声 - VOICEVOX:猫使ビィ
+- SUSTAINA-OP2™ 201 音声 - VOICEVOX:春日部つむぎ
+- SUSTAINA-OP2™ 202 音声 - VOICEVOX:†聖騎士 紅桜†
+- SUSTAINA-OP2™ 203 音声 - VOICEVOX:琴詠ニア
+- SUSTAINA-OP2™ 204 音声 - VOICEVOX:猫使アル
+- SUSTAINA-OP2™ 205 音声 - VOICEVOX:猫使ビィ
 
 **共通設定**
 - 話速: 1.00
@@ -41,10 +41,10 @@ https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#Connection_Diagram
   - 011: Ready姿勢になります
   - 012: バッテリー残量が残りわずかです
   - 013: バッテリーを交換してください
-  - 014: 
-  - 015: 
-  - 016: 
-  - 017: 
+  - 014: ファースト電源が接続されました
+  - 015: ファースト電源が切断されました
+  - 016: セカンド電源が接続されました
+  - 017: セカンド電源が切断されました
   - 018: 
   - 019: 
 - 常用単語 ( 020_* ~ 039_* )
