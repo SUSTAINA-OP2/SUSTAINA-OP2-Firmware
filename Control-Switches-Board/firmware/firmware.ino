@@ -22,6 +22,8 @@ Adafruit_NeoPixel pixels(NUM_NEOPIXEL, NEOPIXEL_LED_PIN, NEO_GRB + NEO_KHZ800);
 // USB Serial
 constexpr uint32_t USB_SERIAL_BAUDRATE = 115200;
 
+uint64_t lastNeopixelSetupTime = 0;  // Variable to store the last call time of setupNeopixels
+
 // Packet structure to send to Arduino.
 // 0~11 bits| LED state
 //       0~2  | 1st LED
@@ -181,6 +183,8 @@ void setupNeopixels(const uint16_t targetState) {
     pixels.clear();
   }
   pixels.show();
+
+  lastNeopixelSetupTime = millis();  // Update the last call time
 }
 
 void setup() {
@@ -208,7 +212,7 @@ void setup() {
   pixels.begin();
   pixels.clear();
 
-  for(int i = 0; i < NUM_NEOPIXEL; i++) {
+  for (int i = 0; i < NUM_NEOPIXEL; i++) {
     pixels.setPixelColor(i, pixels.Color(0, 0, 0));
   }
 
@@ -238,5 +242,14 @@ void loop() {
       }
       SutainaSerial.sendPacket();
     }
+  }
+
+  // Check if more than 1 second has passed since the last call to setupNeopixels
+  if (millis() - lastNeopixelSetupTime > 1000) {
+    for (int i = 0; i < NUM_NEOPIXEL; i++) {
+      pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+    }
+    pixels.show();
+    lastNeopixelSetupTime = millis();  // Reset the timer
   }
 }
