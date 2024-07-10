@@ -1,8 +1,22 @@
 import os
 import shutil
+import sys
+
+# Check if a directory number is provided
+if len(sys.argv) != 2:
+    print("Error: No directory number provided.")
+    sys.exit(1)
+
+# Get the directory number from the command line arguments
+dir_number = sys.argv[1]
+
+# Validate the directory number
+if dir_number not in ['201', '202', '203', '204', '205']:
+    print("Error: Invalid directory number. Please provide a number between 201 and 205.")
+    sys.exit(1)
 
 # Directory containing the audio files
-source_dir = "201/"
+source_dir = f"{dir_number}/"
 # Mount point of the SD card (modify as needed)
 destination_dir = "E:/"
 
