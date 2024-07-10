@@ -207,6 +207,11 @@ void setup() {
 
   pixels.begin();
   pixels.clear();
+
+  for(int i = 0; i < NUM_NEOPIXEL; i++) {
+    pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+  }
+
   pixels.show();
 }
 
