@@ -73,8 +73,8 @@ https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#Connection_Diagram
   - 041: HRを開始します
   - 042: HRを終了します
   - 043: サーボオフ
-  - 044: 
-  - 045: 
+  - 044: 正常終了
+  - 045: 異常終了
   - 046: 
   - 047: 
   - 048: 
@@ -98,8 +98,8 @@ https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#Connection_Diagram
   - 064: Game State
   - 065: ニュートラル
   - 066: ディフェンダー
-  - 067: 
-  - 068: 
+  - 067: 戦略を終了します
+  - 068: ボールを検出しました
   - 069: 
 - モーション ( 070_* ~ 089_*)
   - 070: 右クロスキック
