@@ -48,18 +48,21 @@ enum class ButtonStateEnum {
   NOT_PUSHED = 'n',
   RED_PUSHED = 'r',
   RED_PUSHED_OVER_3TIMES = 'R',
-  GREEN_PUSHED = 'g'
+  GREEN_PUSHED = 'g',
+  GREEN_PUSHED_OVER_3TIMES = 'G'
 };
 
 // Variables to manage the state of the buttons
 volatile uint8_t redButtonPressCount = 0;
 volatile uint8_t greenButtonPressCount = 0;
 volatile uint64_t redFirstPressTime = 0;
+volatile uint64_t greenFirstPressTime = 0;
 volatile uint64_t redLastPressTime = 0;
 volatile uint64_t greenLastPressTime = 0;
 volatile bool redButtonProcessed = false;
 volatile bool greenButtonProcessed = false;
 volatile bool redOver3TimesProcessed = false;
+volatile bool greenOver3TimesProcessed = false;
 
 ButtonStateEnum lastButtonState;
 
@@ -72,6 +75,9 @@ void redButtonInterruptHandler() {
       redButtonPressCount = 0;         // Reset count if more than 1.5 seconds have passed
       redOver3TimesProcessed = false;  // Allow reprocessing of RED_PUSHED_OVER_3TIMES
     }
+    greenButtonPressCount = 0;         // Invalidate green button count
+    greenOver3TimesProcessed = false;  // Allow reprocessing of GREEN_PUSHED_OVER_3TIMES
+
     redButtonPressCount++;
     redLastPressTime = nowPressTime;
     redButtonProcessed = false;
@@ -82,6 +88,12 @@ void redButtonInterruptHandler() {
 void greenButtonInterruptHandler() {
   const uint64_t nowPressTime = millis();
   if (nowPressTime - greenLastPressTime > CHATTERING_PREVENTION_SECONDS) {
+    if (greenButtonPressCount == 0 || (nowPressTime - greenFirstPressTime > CONSECUTIVE_STRIKE_JUDGMENT_SECONDS)) {
+      greenFirstPressTime = nowPressTime;
+      greenButtonPressCount = 0;         // Reset count if more than 1.5 seconds have passed
+      greenOver3TimesProcessed = false;  // Allow reprocessing of RED_PUSHED_OVER_3TIMES
+    }
+
     redButtonPressCount = 0;         // Invalidate red button count
     redOver3TimesProcessed = false;  // Allow reprocessing of RED_PUSHED_OVER_3TIMES
 
@@ -117,8 +129,19 @@ ButtonStateEnum readButtonState() {
   // Invalidate red button count if green button is pressed
   if (greenButtonPressCount > 0 && !greenButtonProcessed) {
     redButtonPressCount = 0;
-    greenButtonPressCount = 0;
-    returnState = ButtonStateEnum::GREEN_PUSHED;
+    if (millis() - greenFirstPressTime <= CONSECUTIVE_STRIKE_JUDGMENT_SECONDS) {
+      if (greenButtonPressCount >= STRIKE_COUNT && !greenOver3TimesProcessed) {
+        returnState = ButtonStateEnum::GREEN_PUSHED_OVER_3TIMES;
+        greenOver3TimesProcessed = true;
+      } else if (greenButtonPressCount < STRIKE_COUNT) {
+        returnState = ButtonStateEnum::GREEN_PUSHED;
+      }
+    } else {
+      returnState = ButtonStateEnum::GREEN_PUSHED;
+      greenButtonPressCount = 1;               // Count the last press
+      greenFirstPressTime = greenLastPressTime;  // Reset timer
+      greenOver3TimesProcessed = false;
+    }
     greenButtonProcessed = true;
   }
 
@@ -158,8 +181,15 @@ void handleLedState(ButtonStateEnum currentState) {
 #ifdef SERIAL_DEBUG
     Serial.println("Red button was hit repeatedly");
 #endif  // SERIAL_DEBUG
-    digitalWrite(R_LED_PIN, HIGH);
+    digitalWrite(R_LED_PIN, LOW);
     digitalWrite(G_LED_PIN, HIGH);
+    digitalWrite(B_LED_PIN, LOW);
+  } else if (currentState == ButtonStateEnum::GREEN_PUSHED_OVER_3TIMES) {
+#ifdef SERIAL_DEBUG
+    Serial.println("Green button was hit repeatedly");
+#endif  // SERIAL_DEBUG
+    digitalWrite(R_LED_PIN, HIGH);
+    digitalWrite(G_LED_PIN, LOW);
     digitalWrite(B_LED_PIN, LOW);
   }
 }
