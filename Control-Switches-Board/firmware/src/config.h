@@ -30,6 +30,6 @@ constexpr uint8_t GET_STATE_AND_SET_LED_CMD = 0xA0;
 // constexpr uint8_t _ERROR = 0b10000000;
 
 constexpr uint16_t CONSECUTIVE_STRIKE_JUDGMENT_SECONDS = 1500; //ms
-constexpr uint16_t STRIKE_COUNT = 3;
-constexpr uint16_t CHATTERING_PREVENTION_SECONDS = 100; //ms
+constexpr uint16_t STRIKE_COUNT = 4;
+constexpr uint16_t CHATTERING_PREVENTION_SECONDS = 150; //ms
 #endif // CONFIG_H
