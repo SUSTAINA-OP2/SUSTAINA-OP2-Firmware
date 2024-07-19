@@ -26,11 +26,16 @@ bool SUSTAINA_PMX_SERIAL::readPacket() {
     rxPacket.clear();
     txError = 0b00000000;
 
+    unsigned long startMillis = millis();
+    const unsigned long timeout = 1000;
+
     rxPacket.resize(RX_PACKET_FORWARD_LENGTH);
 
     if (checkHeader()) {
       for (int i = HEADER_LENGTH; i < RX_PACKET_FORWARD_LENGTH; i++) {
         rxPacket[i] = RS485_SERIAL.read();
+        if (millis() - startMillis > timeout)
+          return false;   
       }
 
       size_t rxPacketIndex = HEADER_LENGTH;
@@ -45,6 +50,8 @@ bool SUSTAINA_PMX_SERIAL::readPacket() {
       // Read the rest of the packet
       for (size_t i = RX_PACKET_FORWARD_LENGTH; i < rxLength; i++) {
         rxPacket[i] = RS485_SERIAL.read();
+        if (millis() - startMillis > timeout)
+          return false;
       }
 
       rxDataLength = rxLength - RX_PACKET_MIN_LENGTH;
