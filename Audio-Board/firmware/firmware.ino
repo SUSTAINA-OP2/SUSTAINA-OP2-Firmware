@@ -49,10 +49,12 @@ void loop() {
         switch (SutainaSerial.rxCommand) {
           case PLAY_SOUND_CMD:
             {
-              uint8_t playFile = SutainaSerial.rxData[0];
-              if (playFile > 0 && playFile < 100) {
-                Player.play(static_cast<int16_t>(playFile));
-                break;
+              if (SutainaSerial.rxData.size() == 1) {
+                uint8_t playFile = SutainaSerial.rxData[0];
+                if (playFile > 0 && playFile < 100) {
+                  Player.play(static_cast<int16_t>(playFile));
+                  break;
+                }
               }
               SutainaSerial.txError |= SutainaSerial.CMD_PROCESS_ERROR;
               break;
